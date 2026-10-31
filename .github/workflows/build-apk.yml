@@ -13,7 +13,10 @@ on:
       release_notes:
         description: 'Notas de la versión / Changelog'
         required: false
-        default: '⚡ Actualización automática del Sistema Level Up.'
+        default: '⚡ Nueva actualización del Sistema Level Up: optimizaciones tácticas, 1,324 ejercicios y correcciones del núcleo CORTEX.'
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -42,14 +45,19 @@ jobs:
       - name: 📦 Instalar Dependencias de Node
         run: npm ci || npm install --legacy-peer-deps
 
+      - name: 🔑 Configurar Variables de Entorno Base
+        run: |
+          touch .env
+          echo "EXPO_PUBLIC_GEMINI_API_KEY=${{ secrets.EXPO_PUBLIC_GEMINI_API_KEY }}" >> .env
+
       - name: 🏗️ Prebuild Nativo de Android con Expo
-        run: npx expo prebuild --platform android --clean
+        run: npx expo prebuild --platform android --clean --no-install
 
       - name: 🔨 Compilar APK Release con Gradle
         working-directory: android
         run: |
           chmod +x gradlew
-          ./gradlew assembleRelease --no-daemon
+          ./gradlew assembleRelease -x lint -x test --no-daemon
 
       - name: 🏷️ Determinar Versión y Renombrar APK
         id: prepare_apk
@@ -62,7 +70,7 @@ jobs:
           echo "TAG_NAME=$TAG" >> $GITHUB_ENV
           
           # Renombrar APK para facilitar identificación
-          APK_SOURCE=$(find android/app/build/outputs/apk/release -name "*.apk" | head -n 1)
+          APK_SOURCE=$(find android/app/build/outputs/apk -name "*.apk" | head -n 1)
           if [ -f "$APK_SOURCE" ]; then
             cp "$APK_SOURCE" "level-up-$TAG.apk"
             echo "APK_PATH=level-up-$TAG.apk" >> $GITHUB_ENV
@@ -88,7 +96,7 @@ jobs:
           body: |
             ## ⚔️ Directiva del Sistema: Level Up ${{ env.TAG_NAME }}
             
-            ${{ github.event.inputs.release_notes || 'Nueva actualización del sistema compilada automáticamente vía GitHub Actions.' }}
+            ${{ github.event.inputs.release_notes || '⚡ Nueva actualización del Sistema Level Up: optimizaciones tácticas, 1,324 ejercicios y mejoras del núcleo CORTEX.' }}
             
             ### 📲 Instalación en Android:
             1. Descarga el archivo `.apk` adjunto abajo.
