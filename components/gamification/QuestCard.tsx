@@ -21,6 +21,7 @@ export interface Quest {
   instructions?: string[];
   cortexAdvice?: string;
   videoUrl?: string;
+  exerciseKey?: string;
 }
 
 interface QuestCardProps {

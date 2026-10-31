@@ -56,6 +56,7 @@ const getTodayDateKey = (): string => {
 export const DEFAULT_FIVE_QUESTS: Quest[] = [
   {
     id: 'quest_1',
+    exerciseKey: 'pushups',
     title: 'Misión 1: Flexiones Militares Tácticas',
     description: 'Ejecuta 3 series con cadencia lenta de 4s bajada y 2s pausa isométrica.',
     category: 'exercise',
@@ -78,6 +79,7 @@ export const DEFAULT_FIVE_QUESTS: Quest[] = [
   },
   {
     id: 'quest_2',
+    exerciseKey: 'squats',
     title: 'Misión 2: Sentadillas Tácticas de Cazador',
     description: 'Desarrolla la base del tren inferior con descenso controlado y máxima estabilidad articular.',
     category: 'exercise',
@@ -100,6 +102,7 @@ export const DEFAULT_FIVE_QUESTS: Quest[] = [
   },
   {
     id: 'quest_3',
+    exerciseKey: 'pike',
     title: 'Misión 3: Flexiones en Pica / Pike Push-Ups',
     description: 'Enfoque estricto en deltoides, hombros y tríceps con peso corporal.',
     category: 'exercise',
@@ -122,6 +125,7 @@ export const DEFAULT_FIVE_QUESTS: Quest[] = [
   },
   {
     id: 'quest_4',
+    exerciseKey: 'diamond',
     title: 'Misión 4: Flexiones Diamante de Poder',
     description: 'Alinea los dedos para enfocar el esfuerzo en tríceps y pectoral interno.',
     category: 'exercise',
@@ -144,6 +148,7 @@ export const DEFAULT_FIVE_QUESTS: Quest[] = [
   },
   {
     id: 'quest_5',
+    exerciseKey: 'rear_lunge',
     title: 'Misión 5: Zancadas Tácticas de Agilidad',
     description: 'Paso largo y controlado para fuerza unilateral y estabilidad de rodilla.',
     category: 'exercise',

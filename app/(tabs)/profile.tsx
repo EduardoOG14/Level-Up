@@ -940,7 +940,7 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         </View>
 
-        <Text style={styles.version}>Level Up System v1.0 • Impulsado por CORTEX AI</Text>
+        <Text style={styles.version}>Level Up System v{currentAppVersion} • Impulsado por CORTEX AI</Text>
       </ScrollView>
 
       <PlanAlarmModal visible={showAlarmModal} onClose={() => setShowAlarmModal(false)} />

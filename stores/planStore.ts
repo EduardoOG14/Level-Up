@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { TRAINING_PLANS, type TrainingPlan } from '../constants/plans';
 import {
   scheduleWorkoutAlarm,
@@ -17,20 +18,29 @@ export interface AlarmSettings {
   questsReminder: boolean;
 }
 
+const STORAGE_KEYS = {
+  ACTIVE_PLAN: '@fitrise_active_plan_id',
+  COMPLETED_DAYS: '@fitrise_completed_plan_days',
+  ALARM_SETTINGS: '@fitrise_plan_alarm_settings',
+};
+
 interface PlanStore {
   activePlanId: string;
   completedDayNumbers: number[];
   alarmSettings: AlarmSettings;
+  isLoaded: boolean;
+  initialize: () => Promise<void>;
   setActivePlan: (planId: string) => Promise<void>;
   completePlanDay: (dayNumber: number) => Promise<void>;
   updateAlarmSettings: (settings: Partial<AlarmSettings>) => Promise<void>;
   getActivePlan: () => TrainingPlan | undefined;
-  resetPlan: () => void;
+  resetPlan: () => Promise<void>;
 }
 
 export const usePlanStore = create<PlanStore>((set, get) => ({
-  activePlanId: 'daily_fullbody_titan',
+  activePlanId: 'daily_beginner_foundation',
   completedDayNumbers: [],
+  isLoaded: false,
   alarmSettings: {
     enabled: true,
     hour: 8,
@@ -40,6 +50,26 @@ export const usePlanStore = create<PlanStore>((set, get) => ({
     questsReminder: true,
   },
 
+  initialize: async () => {
+    try {
+      const [savedPlanId, savedDays, savedAlarm] = await Promise.all([
+        AsyncStorage.getItem(STORAGE_KEYS.ACTIVE_PLAN),
+        AsyncStorage.getItem(STORAGE_KEYS.COMPLETED_DAYS),
+        AsyncStorage.getItem(STORAGE_KEYS.ALARM_SETTINGS),
+      ]);
+
+      set({
+        activePlanId: savedPlanId || 'daily_beginner_foundation',
+        completedDayNumbers: savedDays ? JSON.parse(savedDays) : [],
+        alarmSettings: savedAlarm ? JSON.parse(savedAlarm) : get().alarmSettings,
+        isLoaded: true,
+      });
+    } catch (e) {
+      console.warn('Error inicializando PlanStore:', e);
+      set({ isLoaded: true });
+    }
+  },
+
   getActivePlan: () => {
     const { activePlanId } = get();
     return TRAINING_PLANS.find((p) => p.id === activePlanId) || TRAINING_PLANS[0];
@@ -47,6 +77,15 @@ export const usePlanStore = create<PlanStore>((set, get) => ({
 
   setActivePlan: async (planId: string) => {
     set({ activePlanId: planId, completedDayNumbers: [] });
+    try {
+      await Promise.all([
+        AsyncStorage.setItem(STORAGE_KEYS.ACTIVE_PLAN, planId),
+        AsyncStorage.setItem(STORAGE_KEYS.COMPLETED_DAYS, JSON.stringify([])),
+      ]);
+    } catch (e) {
+      console.warn('Error guardando plan activo:', e);
+    }
+
     const plan = TRAINING_PLANS.find((p) => p.id === planId);
     const { alarmSettings } = get();
 
@@ -66,6 +105,12 @@ export const usePlanStore = create<PlanStore>((set, get) => ({
     const updated = [...completedDayNumbers, dayNumber];
     set({ completedDayNumbers: updated });
 
+    try {
+      await AsyncStorage.setItem(STORAGE_KEYS.COMPLETED_DAYS, JSON.stringify(updated));
+    } catch (e) {
+      console.warn('Error guardando progreso del plan:', e);
+    }
+
     // Sumar XP al perfil del usuario
     await useUserStore.getState().addXP(xp, 'strength');
 
@@ -79,6 +124,12 @@ export const usePlanStore = create<PlanStore>((set, get) => ({
     const current = get().alarmSettings;
     const updated = { ...current, ...newSettings };
     set({ alarmSettings: updated });
+
+    try {
+      await AsyncStorage.setItem(STORAGE_KEYS.ALARM_SETTINGS, JSON.stringify(updated));
+    } catch (e) {
+      console.warn('Error guardando configuración de alarmas:', e);
+    }
 
     const plan = get().getActivePlan();
 
@@ -96,10 +147,16 @@ export const usePlanStore = create<PlanStore>((set, get) => ({
     await scheduleQuestsReminder(updated.questsReminder, 20, 0);
   },
 
-  resetPlan: () => {
+  resetPlan: async () => {
     set({
-      activePlanId: 'daily_fullbody_titan',
+      activePlanId: 'daily_beginner_foundation',
       completedDayNumbers: [],
     });
+    try {
+      await Promise.all([
+        AsyncStorage.setItem(STORAGE_KEYS.ACTIVE_PLAN, 'daily_beginner_foundation'),
+        AsyncStorage.setItem(STORAGE_KEYS.COMPLETED_DAYS, JSON.stringify([])),
+      ]);
+    } catch (e) {}
   },
 }));

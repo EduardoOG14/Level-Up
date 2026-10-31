@@ -73,12 +73,13 @@ function QuestDetailContent({
 }) {
   // Determinar los datos del ejercicio según el id o título de la misión (memorizado para evitar re-creación en cada render)
   const guide = useMemo(() => {
-    if (quest.id && (quest.id.length === 4 || ALIAS_MAP[quest.id] || EXERCISES_BY_ID.has(quest.id))) {
-      return resolveExerciseGuide(quest.id);
+    const key = quest.exerciseKey || quest.id;
+    if (key && (key.length === 4 || ALIAS_MAP[key] || EXERCISES_BY_ID.has(key))) {
+      return resolveExerciseGuide(key);
     }
-    const titleLower = `${quest.title} ${quest.exerciseName || ''}`.toLowerCase();
-    return resolveExerciseGuide(quest.id || titleLower);
-  }, [quest.id, quest.title, quest.exerciseName]);
+    const titleLower = `${quest.exerciseName || ''} ${quest.title}`.toLowerCase();
+    return resolveExerciseGuide(key || titleLower);
+  }, [quest.id, quest.exerciseKey, quest.title, quest.exerciseName]);
 
   const exerciseTitle = quest.exerciseName || guide.name;
   const muscles = quest.targetMuscles || guide.muscles;

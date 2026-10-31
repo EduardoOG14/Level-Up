@@ -181,6 +181,10 @@ export default function WorkoutsScreen() {
   };
 
   useEffect(() => {
+    usePlanStore.getState().initialize();
+  }, []);
+
+  useEffect(() => {
     const timer = setInterval(() => {
       setBossCountdown(getBossCountdown());
     }, 1000);
