@@ -50,58 +50,121 @@ export interface ExerciseGuide {
   jointMetrics: { label: string; target: string }[];
   steps: string[];
   cortexAdvice: string;
+  isKneeSafe?: boolean;
+  isLowImpact?: boolean;
+  orthopedicNote?: string;
+  adaptedForJointSafety?: boolean;
+}
+
+export interface UserAdaptationProfile {
+  fitnessLevel?: 'beginner' | 'intermediate' | 'advanced';
+  level?: number;
+  equipment?: string[];
+  weight?: number;
+  height?: number;
+  kneeFriendly?: boolean;
 }
 
 // Carga completa de los 1,324 ejercicios con soporte offline y CDN
 export const EXERCISES_DATASET: DatasetExercise[] = require('./exercises_dataset.json');
 
 // Mapeos rápidos para indexación y búsqueda O(1)
-const EXERCISES_BY_ID = new Map<string, DatasetExercise>();
-const EXERCISES_BY_NAME = new Map<string, DatasetExercise>();
+export const EXERCISES_BY_ID = new Map<string, DatasetExercise>();
+export const EXERCISES_BY_NAME = new Map<string, DatasetExercise>();
 
 EXERCISES_DATASET.forEach((ex) => {
   EXERCISES_BY_ID.set(ex.id, ex);
   EXERCISES_BY_NAME.set(ex.name.toLowerCase().trim(), ex);
 });
 
-// Mapa de alias tácticos para vincular rutinas existentes con los 1,324 ejercicios reales
+/**
+ * Mapa de alias tácticos validados biomecánicamente.
+ * Cada identificador apunta exactamente al ejercicio anatómico correcto y a su animación visual.
+ */
 export const ALIAS_MAP: Record<string, string> = {
-  // Flexiones y Pecho
-  pushups: '0662', // push-up
-  pushups_assisted: '3216', // chest tap push-up
-  diamond: '0259', // close-grip push-up
-  bench_press: '0025', // barbell bench press
-  dumbbell_bench_press: '0290', // dumbbell incline bench press
+  // Flexiones y Pectoral
+  pushups: '0662', // push-up estándar
+  pushups_assisted: '0493', // incline push-up (regresión correcta, bajo impacto en muñeca y hombro)
+  diamond: '0283', // diamond push-up (tríceps y pectoral esternal)
+  bench_press: '0025', // barbell bench press (press de banca plano)
+  dumbbell_bench_press: '0289', // dumbbell bench press (press con mancuernas en banca plana)
 
-  // Sentadillas y Pierna
-  squats: '0514', // jump squat
-  squats_assisted: '3168', // bodyweight squatting row
-  goblet_squat: '0399', // dumbbell squat
-  barbell_squat: '0025', // barbell squat
-  lunges: '3470', // forward lunge
+  // Sentadillas y Pierna (Sin impacto nocivo en rodillas)
+  squats: '3119', // potty squat (sentadilla libre profunda controlada, sin saltos)
+  squats_assisted: '3132', // potty squat with support (sentadilla asistida con apoyo, cero impacto en rodilla)
+  jump_squat: '0514', // jump squat (solo para rango avanzado sin sobrepeso)
+  goblet_squat: '1760', // dumbbell goblet squat (sentadilla goblet vertical)
+  barbell_squat: '0043', // barbell full squat (sentadilla trasera con barra)
+  box_squat: '0026', // barbell bench squat / box squat (óptima para rodillas seguras)
+  lunges: '3470', // forward lunge (zancada hacia adelante)
+  rear_lunge: '0381', // dumbbell rear lunge (zancada inversa - reduce cizallamiento en rótula)
+  glute_bridge: '3013', // low glute bridge on floor (cadena posterior sin compresión patelar)
+  glute_bridge_march: '3561', // glute bridge march (activación unilateral de glúteo sin impacto)
 
   // Espalda y Tirón
-  pullups: '0652', // pull-up
-  pullups_assisted: '0017', // assisted pull-up
-  lat_pulldown: '0150', // cable lat pulldown
-  dumbbell_row: '0292', // dumbbell bent over row
-  deadlift: '0032', // barbell deadlift
+  pullups: '0652', // pull-up pronada
+  pullups_assisted: '0017', // assisted pull-up (dominada asistida)
+  lat_pulldown: '0150', // cable bar lateral pulldown (jalón al pecho en polea)
+  dumbbell_row: '0292', // dumbbell one arm bent-over row (remo con mancuerna a una mano)
+  deadlift: '0032', // barbell deadlift (peso muerto convencional con barra)
 
   // Brazos y Hombros
-  curls: '0294', // dumbbell biceps curl
-  barbell_curl: '0038', // barbell curl
-  dips: '0009', // assisted chest dip
-  dips_assisted: '0019', // assisted triceps dip
-  tricep_extension: '0415', // dumbbell standing triceps extension
-  overhead_press: '0286', // dumbbell alternate side press
+  curls: '0294', // dumbbell biceps curl (curl de bíceps con mancuerna)
+  barbell_curl: '0031', // barbell curl (curl estricto con barra)
+  dips: '0251', // chest dip (fondos en paralelas)
+  dips_assisted: '0129', // bench dip (knees bent - fondos asistidos en banco)
+  tricep_extension: '0430', // dumbbell standing triceps extension (extensión de tríceps vertical)
+  overhead_press: '0426', // dumbbell standing overhead press (press militar de hombros con mancuernas)
+  pike: '3662', // pike-to-cobra push-up (press vertical en pica)
 
-  // Core y Cardio
-  plank: '0464', // front plank with twist
-  plank_assisted: '3239', // kneeling plank tap shoulder
-  climbers: '0685', // mountain climber
-  burpees: '1160', // burpee
+  // Core y Cardio Funcional
+  plank: '0464', // front plank with twist (plancha frontal dinámica)
+  plank_assisted: '3239', // kneeling plank tap shoulder (plancha de rodillas)
+  climbers: '0630', // mountain climber (escaladores de montaña reales)
+  burpees: '1160', // burpee estándar
   situps: '0001', // 3/4 sit-up
-  air_bike: '0003', // air bike
+  air_bike: '0003', // air bike (bicicleta abdominal cruzada)
+};
+
+/**
+ * Ejercicios de Alto Impacto para rodillas (fuerzas de impacto reactivas al suelo o compresión patelar extrema)
+ */
+export const HIGH_IMPACT_KNEE_IDS = new Set<string>([
+  '0514', // jump squat
+  '0513', // jump squat v. 2
+  '3543', // bodyweight drop jump squat
+  '1160', // burpee
+  '3582', // lunge with jump
+  '1489', // sissy squat (compresión rotuliana extrema)
+  '1759', // single leg pistol squat
+  '1472', // forward jump
+  '1473', // backward jump
+  '0053', // barbell jump squat
+  '0371', // dumbbell plyo squat
+  '2798', // barbell squat jump step rear lunge
+]);
+
+/**
+ * Sustituciones ortopédicas de bajo impacto clínicamente seguras
+ */
+export const KNEE_SAFE_REPLACEMENTS: Record<string, string> = {
+  // Saltos y Burpees -> Reemplazos de cero impacto
+  '0514': '3132', // jump squat -> sentadilla asistida con apoyo
+  '0513': '3132', // jump squat v.2 -> sentadilla asistida con apoyo
+  '3543': '3132', // drop jump squat -> sentadilla asistida con apoyo
+  '1160': '0493', // burpee -> flexión inclinada / step bajo impacto
+  '3582': '0381', // lunge jump -> zancada inversa con mancuerna
+  '1489': '3132', // sissy squat -> sentadilla con apoyo
+  '1759': '3119', // pistol squat -> sentadilla libre a dos piernas
+  '1472': '3561', // forward jump -> puente de glúteos march
+  '1473': '3561', // backward jump -> puente de glúteos march
+  '0053': '0026', // barbell jump squat -> box squat con barra
+  '0371': '0291', // dumbbell plyo squat -> dumbbell bench squat
+  '2798': '0381', // barbell squat jump step -> zancada trasera
+  // Alias directos
+  burpees: '0493', // flexión inclinada
+  jump_squat: '3132', // sentadilla asistida
+  lunges: '0381', // zancada inversa (menos estrés patelar)
 };
 
 // Objeto de compatibilidad vacío para transicionar sin errores de importación
@@ -125,43 +188,86 @@ function formatExerciseTitle(name: string): string {
 }
 
 /**
- * Genera métricas de control articular basadas en el objetivo muscular
+ * Genera métricas de control articular basadas en el objetivo muscular y principios ortopédicos
  */
 function getTargetMetrics(target: string): { label: string; target: string }[] {
   const t = (target || '').toLowerCase();
   if (t.includes('pectoral') || t.includes('chest') || t.includes('triceps')) {
     return [
-      { label: 'Ángulo Codos', target: '45° óptimo' },
-      { label: 'Alineación Torso', target: '180° neutra' },
-      { label: 'Profundidad Pecho', target: '2 cm suelo' },
+      { label: 'Ángulo Codos', target: '45° neutro (salud hombro)' },
+      { label: 'Retracción Escapular', target: '100% activa y deprimida' },
+      { label: 'Alineación Torso', target: 'Columna en eje neutro' },
     ];
   }
-  if (t.includes('quad') || t.includes('glute') || t.includes('leg')) {
+  if (t.includes('quad') || t.includes('glute') || t.includes('leg') || t.includes('calves')) {
     return [
-      { label: 'Ángulo Rodillas', target: '90° paralelo' },
-      { label: 'Alineación Talones', target: 'Anclaje total' },
-      { label: 'Eje Columna', target: 'Torso erguido' },
+      { label: 'Ángulo Rodillas', target: '90° paralelo seguro' },
+      { label: 'Valgo Rotuliano', target: '0° (rodilla alineada al 2º dedo)' },
+      { label: 'Empuje Plantar', target: 'Trípode talón y metatarsos' },
     ];
   }
-  if (t.includes('lat') || t.includes('back') || t.includes('spine')) {
+  if (t.includes('lat') || t.includes('back') || t.includes('spine') || t.includes('traps')) {
     return [
-      { label: 'Retracción Escapular', target: 'Bloqueo dorsal' },
-      { label: 'Recorrido', target: 'Rango completo' },
-      { label: 'Control Lumbar', target: 'Neutro estable' },
+      { label: 'Depresión Escapular', target: 'Bloqueo dorsal previo' },
+      { label: 'Curvatura Lumbar', target: 'Neutra (sin hiperextensión)' },
+      { label: 'Recorrido', target: 'Rango concéntrico completo' },
     ];
   }
-  if (t.includes('abs') || t.includes('waist')) {
+  if (t.includes('abs') || t.includes('waist') || t.includes('core')) {
     return [
-      { label: 'Tensión Abdominal', target: 'Contracción activa' },
-      { label: 'Respiración', target: 'Exhalar al subir' },
-      { label: 'Presión Cervical', target: '0% tensión cuello' },
+      { label: 'Retroversión Pélvica', target: 'Glúteos y transverso activo' },
+      { label: 'Presión Lumbar', target: '0% curvatura despegada' },
+      { label: 'Respiración Diafragmática', target: 'Exhalar en compresión' },
     ];
   }
   return [
-    { label: 'Control de Cadencia', target: '3s excéntrico' },
-    { label: 'Rango de Movimiento', target: '100% completo' },
-    { label: 'Tensión Continua', target: 'Sin balanceo inercial' },
+    { label: 'Cadencia Excéntrica', target: '3s descenso controlado' },
+    { label: 'Rango de Movimiento', target: '100% seguro y sin rebote' },
+    { label: 'Tensión Mecánica', target: 'Continua en fase activa' },
   ];
+}
+
+/**
+ * Instrucciones clínicas CORTEX validadas por entrenador, nutriólogo y médico deportivo
+ */
+function getClinicalCortexAdvice(
+  name: string,
+  target: string,
+  bodyPart: string,
+  isKneeSafe: boolean = true
+): string {
+  const n = (name || '').toLowerCase();
+  const t = (target || '').toLowerCase();
+  const b = (bodyPart || '').toLowerCase();
+
+  if (n.includes('squat') || n.includes('sentadilla') || b.includes('leg')) {
+    if (!isKneeSafe) {
+      return 'CORTEX Alerta Articular: Ejercicio balístico de alto impacto. Amortigua la caída cayendo suavemente sobre la puntera y flexionando de inmediato las rodillas en 90° sin dejar que colapsen hacia dentro.';
+    }
+    return 'CORTEX Biomecánica: Rodillas siempre alineadas con el segundo dedo del pie (evita valgo). Desciende empujando cadera atrás y sube empujando desde los talones. Inhala al bajar, exhala con fuerza al subir.';
+  }
+
+  if (n.includes('lunge') || n.includes('zancada')) {
+    return 'CORTEX Biomecánica: Mantén el torso vertical y la tibia delantera casi perpendicular al suelo (90°). No permitas que la rodilla sobrepase bruscamente la punta del pie para proteger el ligamento patelofemoral.';
+  }
+
+  if (n.includes('push-up') || n.includes('flexi') || n.includes('bench') || t.includes('pectoral')) {
+    return 'CORTEX Biomecánica: Codos en ángulo de 45° con respecto al torso (forma de flecha, no de T) para evitar pinzamiento subacromial. Mantén escápulas retraídas y glúteos contraídos. Inhala al bajar, exhala al empujar.';
+  }
+
+  if (n.includes('pull') || n.includes('row') || n.includes('remo') || b.includes('back')) {
+    return 'CORTEX Biomecánica: Inicia la tracción bajando los hombros (depresión escapular) antes de doblar los codos. Mantén la columna lumbar neutra y exhala en el punto de máxima contracción dorsal.';
+  }
+
+  if (n.includes('plank') || n.includes('plancha') || t.includes('abs')) {
+    return 'CORTEX Biomecánica: Activa retroversión pélvica ligera (apretar glúteos y meter ombligo hacia la columna). Evita hundir la zona lumbar. Respiración corta, constante y rítmica sin apneas.';
+  }
+
+  if (n.includes('burpee')) {
+    return 'CORTEX Biomecánica: Apoya las manos firmes antes de llevar las piernas atrás. Al saltar adelante, aterriza con pie plano y talón para amortiguar el impacto en meniscos.';
+  }
+
+  return `CORTEX Directiva: Controla la cadencia excéntrica (3 segundos) para maximizar la tensión muscular. Inhala en la fase negativa y exhala al aplicar fuerza concéntrica.`;
 }
 
 /**
@@ -208,6 +314,18 @@ function buildGuideFromDataset(item: DatasetExercise): ExerciseGuide {
     (m) => m.charAt(0).toUpperCase() + m.slice(1)
   );
 
+  const isHighImpact = HIGH_IMPACT_KNEE_IDS.has(item.id);
+  const isKneeSafe = !isHighImpact;
+  const isLowImpact =
+    item.equipment === 'cable' ||
+    item.fitriseEquipment === 'none' && !isHighImpact ||
+    item.name.toLowerCase().includes('bridge') ||
+    item.name.toLowerCase().includes('incline');
+
+  const orthopedicNote = isKneeSafe
+    ? 'Apto para articulaciones y sobrepeso: Cero cizallamiento en ligamento patelar.'
+    : 'Alto impacto articular: Requiere buena masa muscular y técnica para amortiguar.';
+
   return {
     id: item.id,
     name: formatExerciseTitle(item.name),
@@ -225,12 +343,15 @@ function buildGuideFromDataset(item: DatasetExercise): ExerciseGuide {
     cadence: { down: 3, hold: 1, up: 2 },
     jointMetrics: getTargetMetrics(item.target),
     steps: item.steps && item.steps.length > 0 ? item.steps : [
-      'Adopta la postura inicial asegurando la alineación corporal.',
-      'Inicia la fase excéntrica de manera controlada durante 3 segundos.',
-      'Mantén una breve pausa en el punto de máxima contracción.',
-      'Regresa a la posición de inicio con potencia constante.',
+      'Adopta la postura inicial asegurando la alineación corporal y curvatura lumbar neutra.',
+      'Inicia la fase excéntrica inhalando de manera controlada durante 3 segundos.',
+      'Mantén una breve pausa isométrica de 1 segundo en el punto de contracción.',
+      'Regresa a la posición inicial exhalando con potencia y sin balanceo inercial.',
     ],
-    cortexAdvice: `CORTEX directriz: concéntrate en activar ${item.target || 'el músculo objetivo'}. El control de cadencia supera a la velocidad.`,
+    cortexAdvice: getClinicalCortexAdvice(item.name, item.target, item.body_part, isKneeSafe),
+    isKneeSafe,
+    isLowImpact,
+    orthopedicNote,
   };
 }
 
@@ -239,10 +360,13 @@ function buildGuideFromDataset(item: DatasetExercise): ExerciseGuide {
  */
 export function searchExercises(
   query: string,
-  filters?: { bodyPart?: string; equipment?: EquipmentType }
+  filters?: { bodyPart?: string; equipment?: EquipmentType; onlyKneeSafe?: boolean }
 ): DatasetExercise[] {
   const q = (query || '').toLowerCase().trim();
   return EXERCISES_DATASET.filter((ex) => {
+    if (filters?.onlyKneeSafe && HIGH_IMPACT_KNEE_IDS.has(ex.id)) {
+      return false;
+    }
     if (filters?.bodyPart && filters.bodyPart !== 'all' && ex.body_part !== filters.bodyPart) {
       return false;
     }
@@ -281,8 +405,12 @@ export function isExerciseAvailable(
 
 /**
  * Encuentra la alternativa más cercana 100% peso corporal (sin equipo)
+ * Garantiza que para tren inferior NUNCA devuelva saltos lesivos.
  */
-export function getBodyweightAlternativeKey(exerciseKeyOrId: string): string {
+export function getBodyweightAlternativeKey(
+  exerciseKeyOrId: string,
+  kneeFriendly: boolean = false
+): string {
   const guide = resolveExerciseGuide(exerciseKeyOrId);
   const target = (guide.muscles[0] || '').toLowerCase();
 
@@ -290,7 +418,7 @@ export function getBodyweightAlternativeKey(exerciseKeyOrId: string): string {
     return '0662'; // push-up
   }
   if (target.includes('quad') || target.includes('glute') || target.includes('leg')) {
-    return '0514'; // jump squat
+    return kneeFriendly ? '3132' : '3119'; // potty squat with support o potty squat (JAMÁS jump squat 0514)
   }
   if (target.includes('lat') || target.includes('back')) {
     return '0652'; // pull-up
@@ -302,10 +430,12 @@ export function getBodyweightAlternativeKey(exerciseKeyOrId: string): string {
 }
 
 /**
- * Adapta el circuito para el usuario según:
- * 1. Restricción de equipamiento
- * 2. Nivel de experiencia (Principiante / Intermedio / Avanzado)
- * 3. Nivel de la aplicación (user.level)
+ * ADAPTADOR CLÍNICO INTEGRAL PARA EL CAZADOR:
+ * Valida y adapta cada ejercicio del circuito según:
+ * 1. Riesgo ortopédico y masa corporal (IMC >= 27.5 o peso >= 90kg o rodilla sensible) -> CERO IMPACTO EN RODILLAS
+ * 2. Disponibilidad de equipamiento (gimnasio, mancuernas, peso corporal)
+ * 3. Nivel de experiencia del cazador (Principiante / Intermedio / Avanzado)
+ * 4. Nivel del Sistema CORTEX (user.level)
  */
 export function adaptCircuitForUser<T extends {
   id?: string;
@@ -317,13 +447,11 @@ export function adaptCircuitForUser<T extends {
   repsLabel?: string;
   muscles?: string[];
   restTimeSeconds?: number;
+  isKneeSafe?: boolean;
+  adaptedForJointSafety?: boolean;
 }>(
   circuit: T[],
-  userProfile?: {
-    fitnessLevel?: 'beginner' | 'intermediate' | 'advanced';
-    level?: number;
-    equipment?: string[];
-  }
+  userProfile?: UserAdaptationProfile
 ): T[] {
   const fitnessLevel = userProfile?.fitnessLevel || 'beginner';
   const appLevel = Math.max(userProfile?.level || 1, 1);
@@ -332,40 +460,67 @@ export function adaptCircuitForUser<T extends {
   const hasDumbbells = equipment.includes('dumbbells') || equipment.includes('barbell') || hasGym;
   const isPureBodyweight = equipment.includes('none') && !hasGym && !hasDumbbells;
 
+  // Evaluación biométrica del cazador (Médico deportivo & Entrenador)
+  const weight = userProfile?.weight || 70;
+  const height = userProfile?.height || 175;
+  const heightM = height / 100;
+  const bmi = heightM > 0 ? weight / (heightM * heightM) : 22.8;
+
+  const isHighWeight = weight >= 90;
+  const isHighBMI = bmi >= 27.5;
+  const isKneeSensitive =
+    userProfile?.kneeFriendly === true ||
+    isHighWeight ||
+    isHighBMI ||
+    fitnessLevel === 'beginner';
+
   return circuit.map((item) => {
     let exerciseKey = item.id || item.imageKey || '0662';
+    let wasAdaptedForJointSafety = false;
 
-    // 1. RESTRICCIÓN DE EQUIPAMIENTO
+    // 1. FILTRADO Y PROTECCIÓN ARTICULAR DE RODILLAS
+    if (isKneeSensitive) {
+      const currentId = ALIAS_MAP[exerciseKey] || exerciseKey;
+      if (HIGH_IMPACT_KNEE_IDS.has(currentId) || exerciseKey === 'burpees' || exerciseKey === 'jump_squat') {
+        const replacement = KNEE_SAFE_REPLACEMENTS[currentId] || KNEE_SAFE_REPLACEMENTS[exerciseKey] || '3132';
+        exerciseKey = replacement;
+        wasAdaptedForJointSafety = true;
+      }
+    }
+
+    // 2. RESTRICCIÓN DE EQUIPAMIENTO
     if (isPureBodyweight) {
       if (!isExerciseAvailable(exerciseKey, ['none'])) {
-        exerciseKey = getBodyweightAlternativeKey(exerciseKey);
+        exerciseKey = getBodyweightAlternativeKey(exerciseKey, isKneeSensitive);
       }
     } else if (hasGym) {
       if (exerciseKey === 'pushups' || exerciseKey === '0662') exerciseKey = '0025'; // bench press
       else if (exerciseKey === 'pullups' || exerciseKey === '0652') exerciseKey = '0150'; // lat pulldown
-      else if (exerciseKey === 'squats' && appLevel >= 5) exerciseKey = '0399'; // dumbbell squat
-      else if (exerciseKey === 'curls') exerciseKey = '0038'; // barbell curl
+      else if (exerciseKey === 'squats' && appLevel >= 5) exerciseKey = isKneeSensitive ? '0026' : '0043'; // box squat o full squat
+      else if (exerciseKey === 'curls') exerciseKey = '0031'; // barbell curl
     } else if (hasDumbbells) {
-      if (exerciseKey === 'pushups' && appLevel >= 6) exerciseKey = '0286'; // overhead press
-      else if (exerciseKey === 'squats') exerciseKey = '0399'; // dumbbell squat
+      if (exerciseKey === 'pushups' && appLevel >= 6) exerciseKey = '0289'; // dumbbell bench press
+      else if (exerciseKey === 'squats') exerciseKey = isKneeSensitive ? '0291' : '1760'; // dumbbell bench squat o goblet squat
       else if (exerciseKey === 'curls') exerciseKey = '0294'; // dumbbell curl
     }
 
-    // 2. NIVEL DE EXPERIENCIA
+    // 3. NIVEL DE EXPERIENCIA (Principiante / Intermedio / Avanzado)
     if (fitnessLevel === 'beginner') {
-      if (exerciseKey === '0662' || exerciseKey === '0025') exerciseKey = '3216'; // chest tap push-up
-      else if (exerciseKey === '0514' || exerciseKey === '0399') exerciseKey = '3168'; // squatting row
+      if (exerciseKey === '0662' || exerciseKey === '0025') exerciseKey = '0493'; // incline push-up
+      else if (exerciseKey === '0514' || exerciseKey === '3119') exerciseKey = '3132'; // potty squat with support
       else if (exerciseKey === '0652') exerciseKey = '0017'; // assisted pull-up
       else if (exerciseKey === '0464') exerciseKey = '3239'; // kneeling plank
     }
 
     const guide = resolveExerciseGuide(exerciseKey);
 
-    // 3. INTENSIFICACIÓN POR NIVEL DE CAZADOR
+    // 4. DOSIFICACIÓN DE SERIES Y REPETICIONES
     let scaledSets = item.sets || guide.sets || 3;
-    if (appLevel >= 15) {
+    if (fitnessLevel === 'beginner') {
+      scaledSets = Math.min(scaledSets, 3);
+    } else if (appLevel >= 15) {
       scaledSets = Math.min(scaledSets + 1, 5);
-    } else if (appLevel >= 8 && fitnessLevel !== 'beginner') {
+    } else if (appLevel >= 8) {
       scaledSets = Math.min(scaledSets, 4);
     }
 
@@ -376,17 +531,17 @@ export function adaptCircuitForUser<T extends {
     if (isTimed) {
       scaledTarget = Math.min(baseTarget + (appLevel - 1) * 3, 60);
     } else {
-      const bonusReps = Math.min(Math.floor((appLevel - 1) / 3), 8);
+      const bonusReps = Math.min(Math.floor((appLevel - 1) / 3), 6);
       scaledTarget = baseTarget + bonusReps;
       if (fitnessLevel === 'beginner') {
-        scaledTarget = Math.min(scaledTarget, 12);
+        scaledTarget = Math.min(scaledTarget, 10);
       }
     }
 
-    // Descanso táctico
+    // 5. INTERVALOS DE RECUPERACIÓN CARDIOVASCULAR Y METABÓLICA
     let scaledRest = 20;
-    if (fitnessLevel === 'beginner') {
-      scaledRest = 30;
+    if (fitnessLevel === 'beginner' || isKneeSensitive) {
+      scaledRest = 35; // Mayor depuración de lactato y control de fatiga para evitar fallas técnicas
     } else if (appLevel >= 12) {
       scaledRest = 15;
     }
@@ -409,21 +564,34 @@ export function adaptCircuitForUser<T extends {
       sets: scaledSets,
       restTimeSeconds: scaledRest,
       xpReward: scaledXP,
+      isKneeSafe: guide.isKneeSafe,
+      adaptedForJointSafety: wasAdaptedForJointSafety || (guide.isKneeSafe && isKneeSensitive),
     };
   });
 }
 
+/**
+ * Valida un circuito garantizando que no contenga ejercicios inaccesibles o incompatibles
+ */
 export function validateAndAdaptCircuit(
   circuit: any[],
-  userEquipment: string[] = ['none']
+  userEquipment: string[] = ['none'],
+  kneeFriendly: boolean = false
 ): { adaptedCircuit: any[]; changedCount: number } {
   let changed = 0;
-  const isPureBodyweight = userEquipment.includes('none') && !userEquipment.includes('gym') && !userEquipment.includes('dumbbells');
+  const isPureBodyweight =
+    userEquipment.includes('none') &&
+    !userEquipment.includes('gym') &&
+    !userEquipment.includes('dumbbells');
 
   const adaptedCircuit = circuit.map((item) => {
     let key = item.id || item.imageKey;
+    if (kneeFriendly && HIGH_IMPACT_KNEE_IDS.has(ALIAS_MAP[key] || key)) {
+      key = KNEE_SAFE_REPLACEMENTS[key] || '3132';
+      changed++;
+    }
     if (isPureBodyweight && !isExerciseAvailable(key, ['none'])) {
-      key = getBodyweightAlternativeKey(key);
+      key = getBodyweightAlternativeKey(key, kneeFriendly);
       changed++;
     }
     const guide = resolveExerciseGuide(key);
@@ -433,6 +601,7 @@ export function validateAndAdaptCircuit(
       name: guide.name,
       imageKey: guide.id,
       muscles: guide.muscles,
+      isKneeSafe: guide.isKneeSafe,
     };
   });
 

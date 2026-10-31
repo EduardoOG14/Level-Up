@@ -29,6 +29,8 @@ interface QuestDetailModalProps {
 import {
   EXERCISE_GUIDES,
   resolveExerciseGuide,
+  ALIAS_MAP,
+  EXERCISES_BY_ID,
   type ExerciseGuide,
 } from '../../constants/exercises';
 import { ExerciseMedia } from '../ui/ExerciseMedia';
@@ -71,8 +73,11 @@ function QuestDetailContent({
 }) {
   // Determinar los datos del ejercicio según el id o título de la misión (memorizado para evitar re-creación en cada render)
   const guide = useMemo(() => {
+    if (quest.id && (quest.id.length === 4 || ALIAS_MAP[quest.id] || EXERCISES_BY_ID.has(quest.id))) {
+      return resolveExerciseGuide(quest.id);
+    }
     const titleLower = `${quest.title} ${quest.exerciseName || ''}`.toLowerCase();
-    return resolveExerciseGuide(quest.id && quest.id.length === 4 ? quest.id : titleLower);
+    return resolveExerciseGuide(quest.id || titleLower);
   }, [quest.id, quest.title, quest.exerciseName]);
 
   const exerciseTitle = quest.exerciseName || guide.name;
@@ -456,6 +461,23 @@ function QuestDetailContent({
           </View>
         </View>
 
+        {/* Banner de Certificación Ortopédica y Protección Articular */}
+        <View style={[styles.orthoBanner, guide.isKneeSafe ? styles.orthoBannerSafe : styles.orthoBannerHighImpact]}>
+          <Ionicons
+            name={guide.isKneeSafe ? 'shield-checkmark' : 'alert-circle'}
+            size={18}
+            color={guide.isKneeSafe ? '#10B981' : '#F59E0B'}
+          />
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.orthoBannerTitle, { color: guide.isKneeSafe ? '#10B981' : '#F59E0B' }]}>
+              {guide.isKneeSafe ? 'PROTOCOLO ARTICULAR: RODILLAS SEGURAS' : 'ALERTA BIOMECÁNICA: ALTO IMPACTO'}
+            </Text>
+            <Text style={styles.orthoBannerDesc}>
+              {guide.orthopedicNote}
+            </Text>
+          </View>
+        </View>
+
         {/* Interactive Cadence & Tempo Coach with Robotic Voice */}
         <View style={styles.cadenceCard}>
           <View style={styles.cadenceHeader}>
@@ -814,6 +836,33 @@ const styles = StyleSheet.create({
     padding: Spacing.base,
     gap: Spacing.base,
     paddingBottom: 100,
+  },
+  orthoBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    padding: Spacing.md,
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+  },
+  orthoBannerSafe: {
+    backgroundColor: 'rgba(16, 185, 129, 0.08)',
+    borderColor: 'rgba(16, 185, 129, 0.3)',
+  },
+  orthoBannerHighImpact: {
+    backgroundColor: 'rgba(245, 158, 11, 0.08)',
+    borderColor: 'rgba(245, 158, 11, 0.3)',
+  },
+  orthoBannerTitle: {
+    fontSize: 11,
+    fontWeight: 'bold',
+    letterSpacing: 0.8,
+  },
+  orthoBannerDesc: {
+    color: '#94A3B8',
+    fontSize: 12,
+    lineHeight: 16,
+    marginTop: 2,
   },
   robotCard: {
     borderRadius: Radius.xl,

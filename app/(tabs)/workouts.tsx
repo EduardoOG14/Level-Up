@@ -251,6 +251,9 @@ export default function WorkoutsScreen() {
           fitnessLevel: user?.fitnessLevel || 'beginner',
           level: user?.level || 1,
           equipment: user?.equipment || ['none'],
+          weight: user?.weight,
+          height: user?.height,
+          kneeFriendly: user?.kneeFriendly,
         };
         const validatedCircuit = adaptCircuitForUser(
           rawCircuitExercises.length > 0
@@ -358,6 +361,9 @@ export default function WorkoutsScreen() {
       fitnessLevel: user?.fitnessLevel || 'beginner',
       level: user?.level || 1,
       equipment: user?.equipment || ['none'],
+      weight: user?.weight,
+      height: user?.height,
+      kneeFriendly: user?.kneeFriendly,
     };
     const validatedCircuit = adaptCircuitForUser(currentBoss.circuit, userProfile);
     const bossData: CustomCircuitData = {

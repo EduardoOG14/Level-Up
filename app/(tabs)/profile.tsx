@@ -19,7 +19,14 @@ import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
-import { useUserStore, type UserProfile, DEFAULT_STATS } from '../../stores/userStore';
+import {
+  useUserStore,
+  type UserProfile,
+  DEFAULT_STATS,
+  getUserBMI,
+  getBMICategory,
+  isUserKneeSensitive,
+} from '../../stores/userStore';
 import { useProgressStore } from '../../stores/progressStore';
 import { usePlanStore } from '../../stores/planStore';
 import { useWorkoutStore } from '../../stores/workoutStore';
@@ -90,6 +97,16 @@ export default function ProfileScreen() {
   const { dailyManaRemaining, isUnlimited, initialize: initEnergy } = useCortexEnergyStore();
   const { isChecking: isCheckingUpdate, checkUpdate } = useUpdateStore();
   const currentAppVersion = getCurrentAppVersion();
+
+  // Salud, Biomecánica y Protección Articular
+  const [showBiometricsModal, setShowBiometricsModal] = useState(false);
+  const [editWeight, setEditWeight] = useState(String(user?.weight || 70));
+  const [editHeight, setEditHeight] = useState(String(user?.height || 175));
+  const [isSavingBio, setIsSavingBio] = useState(false);
+
+  const userBmi = getUserBMI(user?.weight, user?.height);
+  const bmiData = getBMICategory(userBmi);
+  const isKneeProtected = isUserKneeSensitive(user);
 
   const pulseAnim = useRef(new Animated.Value(0)).current;
 
@@ -674,6 +691,91 @@ export default function ProfileScreen() {
           )}
         </View>
 
+        {/* 4.5. SALUD, BIOMECÁNICA & PROTECCIÓN ARTICULAR */}
+        <View style={styles.cyberCard}>
+          <View style={styles.cyberCardHeader}>
+            <View style={styles.cyberCardTitleRow}>
+              <View style={[styles.questsTitleIconBox, { backgroundColor: 'rgba(16, 185, 129, 0.15)', borderColor: 'rgba(16, 185, 129, 0.35)' }]}>
+                <Ionicons name="shield-checkmark" size={17} color="#10B981" />
+              </View>
+              <Text style={styles.cyberCardTitle}>[ SALUD & BIOMECÁNICA ARTICULAR ]</Text>
+            </View>
+            <TouchableOpacity
+              onPress={() => {
+                setEditWeight(String(user?.weight || 70));
+                setEditHeight(String(user?.height || 175));
+                setShowBiometricsModal(true);
+              }}
+              style={styles.editBioBtn}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="create-outline" size={13} color="#00F0FF" />
+              <Text style={styles.editBioBtnText}>EDITAR</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Estadísticas de IMC y Biometría */}
+          <View style={styles.bioMetricsRow}>
+            <View style={styles.bioMetricCol}>
+              <Text style={styles.bioMetricLabel}>PESO CORPORAL</Text>
+              <Text style={styles.bioMetricVal}>{user?.weight || 70} kg</Text>
+            </View>
+            <View style={styles.bioMetricDivider} />
+            <View style={styles.bioMetricCol}>
+              <Text style={styles.bioMetricLabel}>ESTATURA</Text>
+              <Text style={styles.bioMetricVal}>{user?.height || 175} cm</Text>
+            </View>
+            <View style={styles.bioMetricDivider} />
+            <View style={styles.bioMetricCol}>
+              <Text style={styles.bioMetricLabel}>IMC CLÍNICO</Text>
+              <Text style={[styles.bioMetricVal, { color: bmiData.color }]}>{userBmi}</Text>
+            </View>
+          </View>
+
+          {/* Aviso Clínico del IMC */}
+          <View style={[styles.bmiNoticeBox, { borderColor: `${bmiData.color}40`, backgroundColor: `${bmiData.color}10` }]}>
+            <Ionicons name="information-circle-outline" size={16} color={bmiData.color} />
+            <Text style={styles.bmiNoticeText}>
+              <Text style={{ fontWeight: 'bold', color: bmiData.color }}>{bmiData.label}: </Text>
+              {bmiData.recommendation}
+            </Text>
+          </View>
+
+          {/* Interruptor de Protección Articular */}
+          <TouchableOpacity
+            style={styles.settingCardItem}
+            onPress={async () => {
+              Haptics.medium();
+              const nextVal = !user?.kneeFriendly;
+              await updateProfile({ kneeFriendly: nextVal });
+              Alert.alert(
+                nextVal ? '🛡️ Protección Articular Activada' : 'Protección Articular Desactivada',
+                nextVal
+                  ? 'CORTEX adaptará automáticamente todas tus rutinas sustituyendo saltos y burpees por ejercicios de cero cizallamiento patelar (Box Squats, Glute Bridges y flexiones inclinadas).'
+                  : 'Las rutinas volverán a incluir la variante estándar y movimientos pliométricos.'
+              );
+            }}
+            activeOpacity={0.7}
+          >
+            <View style={[styles.settingIconBox, { backgroundColor: isKneeProtected ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255, 255, 255, 0.05)', borderColor: isKneeProtected ? 'rgba(16, 185, 129, 0.4)' : 'rgba(255, 255, 255, 0.1)' }]}>
+              <Ionicons name="shield-checkmark" size={18} color={isKneeProtected ? '#10B981' : '#64748B'} />
+            </View>
+            <View style={styles.settingTextCol}>
+              <Text style={styles.settingTitle}>Protección Articular (Rodillas Seguras)</Text>
+              <Text style={styles.settingSubtitle}>
+                {isKneeProtected
+                  ? 'Activo: Filtra saltos y sentadillas balísticas'
+                  : 'Inactivo: Rutinas con saltos estándar'}
+              </Text>
+            </View>
+            <View style={[styles.statusTogglePill, isKneeProtected && styles.statusTogglePillActive]}>
+              <Text style={[styles.statusToggleText, isKneeProtected && styles.statusToggleTextActive]}>
+                {isKneeProtected ? 'ACTIVO 🛡️' : 'OFF'}
+              </Text>
+            </View>
+          </TouchableOpacity>
+        </View>
+
         {/* 5. CONFIGURACIÓN DEL SISTEMA (Formato QuestItem) */}
         <View style={styles.cyberCard}>
           <View style={styles.cyberCardHeader}>
@@ -913,6 +1015,103 @@ export default function ProfileScreen() {
             </View>
           </View>
         </View>
+      </Modal>
+
+      {/* Modal de Calibración de Biometría & Salud */}
+      <Modal
+        visible={showBiometricsModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowBiometricsModal(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={{ flex: 1 }}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalBox}>
+              <View style={styles.modalHeader}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.modalTitle}>Calibración Biométrica</Text>
+                  <Text style={styles.modalSubtitle}>
+                    Ajusta tu peso y estatura. CORTEX recalibrará tus macros, hidratación y riesgo articular.
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  onPress={() => setShowBiometricsModal(false)}
+                  style={styles.modalCloseBtn}
+                >
+                  <Ionicons name="close" size={20} color={Colors.text.primary} />
+                </TouchableOpacity>
+              </View>
+
+              <View style={{ paddingVertical: Spacing.md, gap: Spacing.md }}>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>Peso Corporal (kg)</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Ej. 75.5"
+                    placeholderTextColor={Colors.text.muted}
+                    value={editWeight}
+                    onChangeText={setEditWeight}
+                    keyboardType="decimal-pad"
+                  />
+                </View>
+
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>Estatura (cm)</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Ej. 175"
+                    placeholderTextColor={Colors.text.muted}
+                    value={editHeight}
+                    onChangeText={setEditHeight}
+                    keyboardType="numeric"
+                  />
+                </View>
+              </View>
+
+              <View style={styles.modalFooter}>
+                <TouchableOpacity
+                  style={[styles.saveEqBtn, isSavingBio && { opacity: 0.7 }]}
+                  disabled={isSavingBio}
+                  onPress={async () => {
+                    const w = parseFloat(editWeight.replace(',', '.'));
+                    const h = parseFloat(editHeight.replace(',', '.'));
+                    if (isNaN(w) || w <= 30 || w >= 300) {
+                      Alert.alert('Valor inválido', 'Introduce un peso válido entre 30 y 300 kg.');
+                      return;
+                    }
+                    if (isNaN(h) || h <= 100 || h >= 250) {
+                      Alert.alert('Valor inválido', 'Introduce una estatura válida entre 100 y 250 cm.');
+                      return;
+                    }
+                    setIsSavingBio(true);
+                    Haptics.medium();
+                    const newBmi = getUserBMI(w, h);
+                    const autoKnee = newBmi >= 27.5 || w >= 90;
+                    await updateProfile({
+                      weight: w,
+                      height: h,
+                      kneeFriendly: user?.kneeFriendly !== undefined ? user.kneeFriendly : autoKnee,
+                    });
+                    setIsSavingBio(false);
+                    setShowBiometricsModal(false);
+                    Alert.alert(
+                      'Biometría Actualizada',
+                      `Datos guardados: ${w} kg, ${h} cm (IMC: ${newBmi}). CORTEX ha adaptado tus directivas.`
+                    );
+                  }}
+                  activeOpacity={0.85}
+                >
+                  <Text style={styles.saveEqBtnText}>
+                    {isSavingBio ? 'CALIBRANDO...' : 'GUARDAR PARÁMETROS'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       {/* Modal de Edición de Perfil (Nombre y Foto) */}
@@ -1210,6 +1409,69 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 240, 255, 0.14)',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  editBioBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(0, 240, 255, 0.1)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: Radius.sm,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 240, 255, 0.3)',
+  },
+  editBioBtnText: {
+    color: '#00F0FF',
+    fontSize: 10,
+    fontWeight: 'bold',
+    letterSpacing: 0.6,
+  },
+  bioMetricsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    borderRadius: Radius.md,
+    padding: Spacing.sm,
+    marginBottom: Spacing.sm,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.06)',
+  },
+  bioMetricCol: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  bioMetricLabel: {
+    color: Colors.text.muted,
+    fontSize: 9,
+    fontWeight: 'bold',
+    letterSpacing: 0.5,
+    marginBottom: 2,
+  },
+  bioMetricVal: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: 'bold',
+  },
+  bioMetricDivider: {
+    width: 1,
+    height: 24,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  bmiNoticeBox: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    padding: Spacing.sm,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    marginBottom: Spacing.sm,
+  },
+  bmiNoticeText: {
+    flex: 1,
+    color: '#CBD5E1',
+    fontSize: 11,
+    lineHeight: 16,
   },
   statusWindowTitle: {
     color: '#00F0FF',
@@ -1727,6 +1989,24 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 14,
     letterSpacing: 1,
+  },
+  inputGroup: {
+    gap: 6,
+  },
+  inputLabel: {
+    color: '#CBD5E1',
+    fontSize: 13,
+    fontWeight: 'bold',
+  },
+  input: {
+    backgroundColor: '#131525',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#1E293B',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    color: '#FFFFFF',
+    fontSize: 15,
   },
   // Modal de Edición de Perfil
   editProfileBox: {

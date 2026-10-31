@@ -3,21 +3,25 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts, Spacing, Radius } from '../../constants/theme';
 import { Haptics } from '../../services/haptics';
+import { getUserBMI, getBMICategory } from '../../stores/userStore';
 
 interface MacroCalculatorCardProps {
   weight?: number;
   height?: number;
   age?: number;
   userGoal?: string;
+  initialGender?: 'male' | 'female';
 }
 
 type FitnessGoal = 'lose_fat' | 'recomp' | 'build_muscle';
+type Gender = 'male' | 'female';
 
 export function MacroCalculatorCard({
   weight = 70,
   height = 175,
   age = 25,
   userGoal,
+  initialGender = 'male',
 }: MacroCalculatorCardProps) {
   // Inferir objetivo inicial
   const initialGoal: FitnessGoal =
@@ -28,33 +32,50 @@ export function MacroCalculatorCard({
       : 'recomp';
 
   const [selectedGoal, setSelectedGoal] = useState<FitnessGoal>(initialGoal);
+  const [selectedGender, setSelectedGender] = useState<Gender>(initialGender);
 
-  // Fórmula Mifflin-St Jeor para TMB
+  // Normalización segura de biometría
   const safeWeight = Math.max(weight || 70, 40);
   const safeHeight = Math.max(height || 175, 120);
   const safeAge = Math.max(age || 25, 14);
 
-  const bmr = Math.round(10 * safeWeight + 6.25 * safeHeight - 5 * safeAge + 5);
-  const tdee = Math.round(bmr * 1.4); // Multiplicador de actividad física moderada-alta
+  // Cálculo de IMC clínico
+  const currentBMI = getUserBMI(safeWeight, safeHeight);
+  const bmiInfo = getBMICategory(currentBMI);
 
-  // Ajuste según el objetivo táctico
+  // Peso ajustado para personas con sobrepeso/obesidad (evita sobreestimación tóxica de proteína)
+  const isHighBMI = currentBMI >= 28;
+  const idealWeight = Math.round(22.5 * Math.pow(safeHeight / 100, 2));
+  const effectiveProteinWeight = isHighBMI
+    ? Math.round(idealWeight + 0.35 * (safeWeight - idealWeight))
+    : safeWeight;
+
+  // Fórmula Mifflin-St Jeor clínica
+  // Hombres: 10 * peso + 6.25 * altura - 5 * edad + 5
+  // Mujeres: 10 * peso + 6.25 * altura - 5 * edad - 161
+  const genderConstant = selectedGender === 'male' ? 5 : -161;
+  const bmr = Math.round(10 * safeWeight + 6.25 * safeHeight - 5 * safeAge + genderConstant);
+  const tdee = Math.round(bmr * 1.4); // Multiplicador de actividad moderada
+
+  // Ajuste calórico según objetivo metabólico
   let targetCalories = tdee;
   if (selectedGoal === 'lose_fat') {
-    targetCalories = Math.round(tdee * 0.82); // Déficit del 18%
+    targetCalories = Math.round(tdee * 0.82); // Déficit moderado del 18% para preservar masa muscular
   } else if (selectedGoal === 'build_muscle') {
-    targetCalories = Math.round(tdee * 1.12); // Superávit del 12%
+    targetCalories = Math.round(tdee * 1.12); // Superávit magro del 12%
   }
 
-  // Distribución de macronutrientes:
-  // Proteína: 2.1g por kg (fundamental para el cazador)
-  const proteinGrams = Math.round(safeWeight * 2.1);
+  // Distribución de macronutrientes basada en evidencia clínica:
+  // Proteína: 2.0g/kg sobre peso magro o ajustado
+  const proteinFactor = selectedGoal === 'lose_fat' ? 2.1 : selectedGoal === 'build_muscle' ? 2.0 : 1.9;
+  const proteinGrams = Math.round(effectiveProteinWeight * proteinFactor);
   const proteinCalories = proteinGrams * 4;
 
-  // Grasas saludables: 0.9g por kg
-  const fatGrams = Math.round(safeWeight * 0.9);
+  // Grasas saludables: 0.9g/kg mínimo para síntesis hormonal y líquido sinovial articular
+  const fatGrams = Math.round(Math.max(safeWeight * 0.9, (targetCalories * 0.25) / 9));
   const fatCalories = fatGrams * 9;
 
-  // Carbohidratos: El resto de las calorías
+  // Carbohidratos: Combustible glucolítico residual
   const remainingCalories = Math.max(targetCalories - (proteinCalories + fatCalories), 400);
   const carbGrams = Math.round(remainingCalories / 4);
   const carbCalories = carbGrams * 4;
@@ -64,14 +85,23 @@ export function MacroCalculatorCard({
   const fatPct = Math.round((fatCalories / totalCalculated) * 100);
   const carbPct = Math.round((carbCalories / totalCalculated) * 100);
 
+  // Hidratación clínica recomendada (35 ml / kg + 500ml post-entrenamiento)
+  const targetWaterMl = Math.round(safeWeight * 35);
+  const waterCups = Math.round(targetWaterMl / 250);
+
   const handleSelectGoal = (goal: FitnessGoal) => {
     Haptics.light();
     setSelectedGoal(goal);
   };
 
+  const handleSelectGender = (gender: Gender) => {
+    Haptics.light();
+    setSelectedGender(gender);
+  };
+
   return (
     <View style={styles.card}>
-      {/* Header */}
+      {/* Header con Telemetría Médica */}
       <View style={styles.headerRow}>
         <View style={styles.titleBadge}>
           <Ionicons name="nutrition-outline" size={14} color="#00F0FF" />
@@ -80,10 +110,39 @@ export function MacroCalculatorCard({
         <Text style={styles.bmrSub}>TMB: {bmr} kcal</Text>
       </View>
 
-      <Text style={styles.cardTitle}>Calculadora Táctica de Macros</Text>
+      <Text style={styles.cardTitle}>Calculadora Táctica de Macros & Salud</Text>
       <Text style={styles.cardDesc}>
-        Calibración biométrica basada en tu peso ({safeWeight} kg) y estatura ({safeHeight} cm).
+        Calibración biométrica para {safeWeight} kg y {safeHeight} cm.
       </Text>
+
+      {/* Selector de Género Fisiológico */}
+      <View style={styles.genderRow}>
+        <TouchableOpacity
+          style={[styles.genderBtn, selectedGender === 'male' && styles.genderBtnActive]}
+          onPress={() => handleSelectGender('male')}
+          activeOpacity={0.8}
+        >
+          <Text style={[styles.genderBtnText, selectedGender === 'male' && styles.genderBtnTextActive]}>
+            ♂️ Hombre
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.genderBtn, selectedGender === 'female' && styles.genderBtnActive]}
+          onPress={() => handleSelectGender('female')}
+          activeOpacity={0.8}
+        >
+          <Text style={[styles.genderBtnText, selectedGender === 'female' && styles.genderBtnTextActive]}>
+            ♀️ Mujer
+          </Text>
+        </TouchableOpacity>
+
+        {/* Badge de IMC Clínico */}
+        <View style={[styles.bmiPill, { borderColor: bmiInfo.color }]}>
+          <Text style={[styles.bmiPillText, { color: bmiInfo.color }]}>
+            IMC: {currentBMI} • {bmiInfo.label}
+          </Text>
+        </View>
+      </View>
 
       {/* Selector de Objetivos */}
       <View style={styles.goalsSelectorRow}>
@@ -127,9 +186,9 @@ export function MacroCalculatorCard({
         <View style={styles.deficitPill}>
           <Text style={styles.deficitPillText}>
             {selectedGoal === 'lose_fat'
-              ? '-18% Déficit'
+              ? '-18% Déficit Seguro'
               : selectedGoal === 'build_muscle'
-              ? '+12% Superávit'
+              ? '+12% Superávit Magro'
               : 'Mantenimiento'}
           </Text>
         </View>
@@ -152,7 +211,7 @@ export function MacroCalculatorCard({
           </View>
           <Text style={[styles.macroBoxGrams, { color: '#EF4444' }]}>{proteinGrams}g</Text>
           <Text style={styles.macroBoxSub}>
-            2.1g/kg • {proteinPct}% ({proteinCalories} kcal)
+            {isHighBMI ? 'Masa magra' : `${proteinFactor}g/kg`} • {proteinPct}%
           </Text>
         </View>
 
@@ -164,7 +223,7 @@ export function MacroCalculatorCard({
           </View>
           <Text style={[styles.macroBoxGrams, { color: '#00F0FF' }]}>{carbGrams}g</Text>
           <Text style={styles.macroBoxSub}>
-            Energía • {carbPct}% ({carbCalories} kcal)
+            Glucógeno • {carbPct}%
           </Text>
         </View>
 
@@ -176,17 +235,39 @@ export function MacroCalculatorCard({
           </View>
           <Text style={[styles.macroBoxGrams, { color: '#F59E0B' }]}>{fatGrams}g</Text>
           <Text style={styles.macroBoxSub}>
-            Hormonal • {fatPct}% ({fatCalories} kcal)
+            Articular • {fatPct}%
           </Text>
+        </View>
+      </View>
+
+      {/* Telemetría de Hidratación & Salud Articular */}
+      <View style={styles.hydrationRow}>
+        <View style={styles.hydrationCol}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <Ionicons name="water" size={16} color="#00F0FF" />
+            <Text style={styles.hydrationLabel}>META DE AGUA CLÍNICA</Text>
+          </View>
+          <Text style={styles.hydrationValue}>
+            {targetWaterMl.toLocaleString()} ml <Text style={{ fontSize: 11, color: '#94A3B8' }}>({waterCups} vasos)</Text>
+          </Text>
+        </View>
+        <View style={styles.fiberCol}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <Ionicons name="leaf-outline" size={16} color="#10B981" />
+            <Text style={styles.hydrationLabel}>FIBRA DIETÉTICA</Text>
+          </View>
+          <Text style={styles.hydrationValue}>30 - 35g / día</Text>
         </View>
       </View>
 
       {/* Directiva Biológica de CORTEX */}
       <View style={styles.directiveBox}>
-        <Ionicons name="hardware-chip-outline" size={16} color="#00F0FF" />
+        <Ionicons name="shield-checkmark-outline" size={18} color="#00F0FF" />
         <Text style={styles.directiveText}>
-          <Text style={{ fontWeight: 'bold', color: '#FFFFFF' }}>Directiva Biológica: </Text>
-          Prioriza alcanzar tus {proteinGrams}g de proteína al día mediante pollo, huevos, pescado o legumbres. La síntesis muscular exige proteína continua tras los circuitos.
+          <Text style={{ fontWeight: 'bold', color: '#FFFFFF' }}>Prescripción CORTEX: </Text>
+          {isHighBMI
+            ? `Tu meta de proteína (${proteinGrams}g) está calculada sobre tu peso magro funcional para evitar sobrecarga renal. Las grasas saludables (${fatGrams}g) son vitales para nutrir el cartílago articular de tus rodillas.`
+            : `Distribuye tus ${proteinGrams}g de proteína en 3-4 tomas para maximizar la síntesis muscular post-entrenamiento. Consume agua regularmente para optimizar la viscosidad del líquido sinovial.`}
         </Text>
       </View>
     </View>
@@ -238,7 +319,47 @@ const styles = StyleSheet.create({
     color: Colors.text.secondary,
     fontSize: 12,
     lineHeight: 18,
+    marginBottom: Spacing.sm,
+  },
+  genderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
     marginBottom: Spacing.md,
+  },
+  genderBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: '#161824',
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+  },
+  genderBtnActive: {
+    backgroundColor: 'rgba(0, 240, 255, 0.15)',
+    borderColor: '#00F0FF',
+  },
+  genderBtnText: {
+    color: Colors.text.secondary,
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  genderBtnTextActive: {
+    color: '#00F0FF',
+    fontWeight: 'bold',
+  },
+  bmiPill: {
+    flex: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    alignItems: 'center',
+  },
+  bmiPillText: {
+    fontSize: 10,
+    fontWeight: 'bold',
   },
   goalsSelectorRow: {
     flexDirection: 'row',
@@ -348,6 +469,39 @@ const styles = StyleSheet.create({
     color: Colors.text.muted,
     fontSize: 9,
     marginTop: 2,
+  },
+  hydrationRow: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+    marginBottom: Spacing.md,
+  },
+  hydrationCol: {
+    flex: 1,
+    backgroundColor: '#131520',
+    padding: Spacing.sm,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 240, 255, 0.15)',
+  },
+  fiberCol: {
+    flex: 1,
+    backgroundColor: '#131520',
+    padding: Spacing.sm,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: 'rgba(16, 185, 129, 0.15)',
+  },
+  hydrationLabel: {
+    color: Colors.text.muted,
+    fontSize: 9,
+    fontWeight: 'bold',
+    letterSpacing: 0.6,
+  },
+  hydrationValue: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginTop: 4,
   },
   directiveBox: {
     flexDirection: 'row',

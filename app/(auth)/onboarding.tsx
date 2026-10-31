@@ -50,6 +50,7 @@ export default function OnboardingScreen() {
   const [age, setAge] = useState('');
   const [weight, setWeight] = useState('');
   const [height, setHeight] = useState('');
+  const [kneeFriendly, setKneeFriendly] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const toggleGoal = (id: string) => {
@@ -179,6 +180,13 @@ export default function OnboardingScreen() {
       if (age) profileData.age = parseInt(age, 10);
       if (weight) profileData.weight = parseFloat(weight);
       if (height) profileData.height = parseFloat(height);
+
+      const parsedW = profileData.weight || 70;
+      const parsedH = (profileData.height || 175) / 100;
+      const computedBmi = parsedH > 0 ? parsedW / (parsedH * parsedH) : 22.8;
+
+      profileData.kneeFriendly =
+        kneeFriendly || computedBmi >= 27.5 || parsedW >= 90;
 
       if (user) {
         await updateProfile(profileData);
@@ -404,6 +412,35 @@ export default function OnboardingScreen() {
                 keyboardType="numeric"
               />
             </View>
+
+            {/* Protección Articular (Rodillas Seguras / Bajo Impacto) */}
+            <TouchableOpacity
+              style={[
+                styles.jointToggleCard,
+                kneeFriendly && styles.jointToggleCardActive,
+              ]}
+              onPress={() => setKneeFriendly(!kneeFriendly)}
+              activeOpacity={0.8}
+            >
+              <Ionicons
+                name={kneeFriendly ? 'shield-checkmark' : 'shield-outline'}
+                size={22}
+                color={kneeFriendly ? '#10B981' : Colors.text.muted}
+              />
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.jointToggleTitle, kneeFriendly && { color: '#10B981' }]}>
+                  Protección Articular (Rodillas Seguras) 🛡️
+                </Text>
+                <Text style={styles.jointToggleSub}>
+                  Recomendado para sobrepeso o molestias. CORTEX elimina saltos e impactos bruscos de tus rutinas.
+                </Text>
+              </View>
+              <Ionicons
+                name={kneeFriendly ? 'checkbox' : 'square-outline'}
+                size={20}
+                color={kneeFriendly ? '#10B981' : Colors.text.muted}
+              />
+            </TouchableOpacity>
           </View>
         )}
       </ScrollView>
@@ -632,6 +669,32 @@ const styles = StyleSheet.create({
     fontSize: Fonts.sizes.base,
     borderWidth: 1,
     borderColor: Colors.border,
+  },
+  jointToggleCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    borderRadius: Radius.md,
+    padding: Spacing.base,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    marginTop: Spacing.xs,
+  },
+  jointToggleCardActive: {
+    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+    borderColor: '#10B981',
+  },
+  jointToggleTitle: {
+    color: Colors.text.primary,
+    fontSize: 13,
+    fontWeight: 'bold',
+  },
+  jointToggleSub: {
+    color: Colors.text.secondary,
+    fontSize: 11,
+    lineHeight: 16,
+    marginTop: 2,
   },
   nav: {
     flexDirection: 'row',

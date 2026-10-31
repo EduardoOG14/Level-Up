@@ -121,6 +121,9 @@ function PlanCircuitContent({
     fitnessLevel: user?.fitnessLevel || 'beginner',
     level: user?.level || 1,
     equipment: user?.equipment || ['none'],
+    weight: user?.weight,
+    height: user?.height,
+    kneeFriendly: user?.kneeFriendly,
   };
 
   const rawCircuit = isCustom
@@ -131,6 +134,11 @@ function PlanCircuitContent({
 
   // Adaptación integral: filtra equipo, aplica regresiones/asistencias para principiantes y escala series/reps por nivel
   const circuit = adaptCircuitForUser(rawCircuit, userProfile);
+  const isJointProtectionActive =
+    user?.kneeFriendly ||
+    ((user?.weight || 0) >= 90) ||
+    (user?.weight && user?.height ? (user.weight / Math.pow(user.height / 100, 2) >= 27.5) : false);
+  const hasAdaptedJointSafeExercises = circuit.some((c: any) => c.adaptedForJointSafety);
 
   // Estados de navegación
   const [view, setView] = useState<ModalView>('overview');
@@ -555,7 +563,27 @@ function PlanCircuitContent({
                 NIVEL {user?.level || 1} • {activeExercise?.sets || 3} SERIES
               </Text>
             </View>
+            {isJointProtectionActive && (
+              <View style={[styles.calibTagCyan, { borderColor: '#10B981', backgroundColor: 'rgba(16, 185, 129, 0.15)' }]}>
+                <Text style={[styles.calibTagCyanText, { color: '#10B981' }]}>
+                  🛡️ BAJO IMPACTO
+                </Text>
+              </View>
+            )}
           </View>
+
+          {/* Banner de Protección Articular */}
+          {(isJointProtectionActive || hasAdaptedJointSafeExercises) && (
+            <View style={styles.jointAlertCard}>
+              <Ionicons name="shield-checkmark" size={16} color="#00F0FF" />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.jointAlertTitle}>[ 🛡️ PROTOCOLO ARTICULAR ACTIVO ]</Text>
+                <Text style={styles.jointAlertSub}>
+                  Ejercicios adaptados a bajo impacto. Cero estrés patelar en rodillas y meniscos.
+                </Text>
+              </View>
+            </View>
+          )}
 
           {/* Lista de Ejercicios del Circuito */}
           <Text style={styles.sectionHeader}>ESTACIONES DEL CIRCUITO</Text>
@@ -619,7 +647,14 @@ function PlanCircuitContent({
                     >
                       {ex.name}
                     </Text>
-                    <Text style={styles.circuitExReps}>{ex.repsLabel} • Descanso: 20s</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                      <Text style={styles.circuitExReps}>{ex.repsLabel} • Descanso: {ex.restTimeSeconds || 20}s</Text>
+                      {(ex as any).adaptedForJointSafety && (
+                        <View style={styles.kneePill}>
+                          <Text style={styles.kneePillText}>🛡️ Seguro</Text>
+                        </View>
+                      )}
+                    </View>
                     <Text style={styles.circuitExMuscles}>
                       {ex.muscles.join(' • ')}
                     </Text>
@@ -1262,6 +1297,41 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '700',
     letterSpacing: 0.5,
+  },
+  jointAlertCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: 'rgba(0, 240, 255, 0.08)',
+    padding: Spacing.sm,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 240, 255, 0.3)',
+    marginBottom: Spacing.sm,
+  },
+  jointAlertTitle: {
+    color: '#00F0FF',
+    fontSize: 10,
+    fontWeight: 'bold',
+    letterSpacing: 0.6,
+  },
+  jointAlertSub: {
+    color: Colors.text.secondary,
+    fontSize: 11,
+    lineHeight: 15,
+  },
+  kneePill: {
+    backgroundColor: 'rgba(16, 185, 129, 0.15)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: Radius.full,
+    borderWidth: 1,
+    borderColor: 'rgba(16, 185, 129, 0.35)',
+  },
+  kneePillText: {
+    color: '#10B981',
+    fontSize: 9,
+    fontWeight: 'bold',
   },
 
   sectionHeader: {

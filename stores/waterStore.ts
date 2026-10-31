@@ -6,6 +6,18 @@ import { Haptics } from '../services/haptics';
 export const TARGET_WATER_CUPS = 8;
 export const ML_PER_CUP = 250;
 
+/**
+ * Calcula la meta de hidratación clínica (35 ml / kg)
+ */
+export function getClinicalWaterTargetMl(weight?: number): number {
+  const w = Math.max(weight || 70, 40);
+  return Math.max(Math.round((w * 35) / 250) * 250, 1750);
+}
+
+export function getClinicalWaterTargetCups(weight?: number): number {
+  return Math.max(Math.round(getClinicalWaterTargetMl(weight) / ML_PER_CUP), 7);
+}
+
 interface WaterStore {
   cupsDrank: number;
   currentMl: number;
@@ -41,6 +53,10 @@ export const useWaterStore = create<WaterStore>((set, get) => ({
     try {
       const todayKey = getTodayDateKey();
       const storageKey = `@fitrise_water_${todayKey}_${uid}`;
+      const userWeight = useUserStore.getState().user?.weight;
+      const targetCups = getClinicalWaterTargetCups(userWeight);
+      const targetMl = targetCups * ML_PER_CUP;
+
       const raw = await AsyncStorage.getItem(storageKey);
       if (raw) {
         const data = JSON.parse(raw);
@@ -48,8 +64,8 @@ export const useWaterStore = create<WaterStore>((set, get) => ({
         set({
           cupsDrank: count,
           currentMl: count * ML_PER_CUP,
-          targetMl: TARGET_WATER_CUPS * ML_PER_CUP,
-          completedToday: count >= TARGET_WATER_CUPS,
+          targetMl,
+          completedToday: count >= targetCups,
           bonusClaimed: !!data.bonusClaimed,
           lastDrinkTimestamp: data.lastDrinkTimestamp || null,
           isLoaded: true,
@@ -58,7 +74,7 @@ export const useWaterStore = create<WaterStore>((set, get) => ({
         set({
           cupsDrank: 0,
           currentMl: 0,
-          targetMl: TARGET_WATER_CUPS * ML_PER_CUP,
+          targetMl,
           completedToday: false,
           bonusClaimed: false,
           lastDrinkTimestamp: null,
@@ -72,13 +88,14 @@ export const useWaterStore = create<WaterStore>((set, get) => ({
   },
 
   drinkCup: async (uid: string) => {
-    const { cupsDrank, bonusClaimed } = get();
-    if (cupsDrank >= TARGET_WATER_CUPS) {
+    const { cupsDrank, targetMl, bonusClaimed } = get();
+    const targetCups = Math.max(Math.round(targetMl / ML_PER_CUP), 7);
+    if (cupsDrank >= targetCups) {
       return { isFull: true };
     }
 
     const newCount = cupsDrank + 1;
-    const isNowFull = newCount >= TARGET_WATER_CUPS;
+    const isNowFull = newCount >= targetCups;
     const nowTimestamp = Date.now();
     let shouldClaimBonus = false;
 
@@ -89,7 +106,7 @@ export const useWaterStore = create<WaterStore>((set, get) => ({
     set({
       cupsDrank: newCount,
       currentMl: newCount * ML_PER_CUP,
-      targetMl: TARGET_WATER_CUPS * ML_PER_CUP,
+      targetMl,
       completedToday: isNowFull,
       bonusClaimed: bonusClaimed || shouldClaimBonus,
       lastDrinkTimestamp: nowTimestamp,

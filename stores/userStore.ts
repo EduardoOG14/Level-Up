@@ -29,6 +29,9 @@ export interface UserProfile {
   age?: number;
   weight?: number;
   height?: number;
+  gender?: 'male' | 'female' | 'other';
+  kneeFriendly?: boolean; // Modo Protección Articular (Rodillas Seguras / Bajo Impacto)
+  injuries?: string[];
   // Progress
   workoutsCompleted: number;
   questsCompleted: number;
@@ -195,6 +198,11 @@ export async function createUserProfile(uid?: string, data?: Partial<UserProfile
     age: data?.age,
     weight: data?.weight,
     height: data?.height,
+    gender: data?.gender || 'male',
+    kneeFriendly:
+      data?.kneeFriendly ??
+      (getUserBMI(data?.weight, data?.height) >= 27.5 || (data?.weight || 0) >= 90),
+    injuries: data?.injuries || [],
     workoutsCompleted: 0,
     questsCompleted: 0,
     createdAt: new Date().toISOString(),
@@ -209,4 +217,68 @@ export async function createUserProfile(uid?: string, data?: Partial<UserProfile
 
   useUserStore.getState().setUser(profile);
   return profile;
+}
+
+/**
+ * Calcula el Índice de Masa Corporal (IMC / BMI) de forma clínica
+ */
+export function getUserBMI(weight?: number, height?: number): number {
+  const w = weight || 70;
+  const h = (height || 175) / 100;
+  if (h <= 0) return 22.8;
+  const bmi = w / (h * h);
+  return Math.round(bmi * 10) / 10;
+}
+
+/**
+ * Clasificación clínica del IMC con indicación de riesgo articular
+ */
+export function getBMICategory(bmi: number): {
+  label: string;
+  color: string;
+  isHighJointRisk: boolean;
+  recommendation: string;
+} {
+  if (bmi < 18.5) {
+    return {
+      label: 'Bajo Peso',
+      color: '#38BDF8',
+      isHighJointRisk: false,
+      recommendation: 'Prioriza superávit calórico y entrenamiento de hipertrofia para ganar masa muscular magra.',
+    };
+  }
+  if (bmi <= 24.9) {
+    return {
+      label: 'Normopeso (Óptimo)',
+      color: '#10B981',
+      isHighJointRisk: false,
+      recommendation: 'Rango biométrico saludable. Capacidad para tolerar cargas pliométricas y progresiones estándar.',
+    };
+  }
+  if (bmi <= 29.9) {
+    return {
+      label: 'Sobrepeso',
+      color: '#F59E0B',
+      isHighJointRisk: bmi >= 27.5,
+      recommendation: 'Mayor compresión en meniscos y cartílago patelar. Se aconseja activar Protección Articular.',
+    };
+  }
+  return {
+    label: 'Obesidad (Clase I-II)',
+    color: '#EF4444',
+    isHighJointRisk: true,
+    recommendation: 'Compresión articular crítica. CORTEX activa automáticamente el Protocolo de Cero Impacto en rodillas.',
+  };
+}
+
+/**
+ * Determina si el cazador requiere protección biomecánica en rodillas
+ */
+export function isUserKneeSensitive(user?: Partial<UserProfile> | null): boolean {
+  if (!user) return false;
+  if (user.kneeFriendly) return true;
+  const bmi = getUserBMI(user.weight, user.height);
+  if (bmi >= 27.5) return true;
+  if ((user.weight || 0) >= 90) return true;
+  return false;
 }
