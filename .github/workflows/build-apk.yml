@@ -22,6 +22,9 @@ jobs:
   build:
     name: Compilar APK Android
     runs-on: ubuntu-latest
+    env:
+      ANDROID_HOME: /usr/local/lib/android/sdk
+      ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
 
     steps:
       - name: ⬇️ Checkout del Repositorio
@@ -39,11 +42,11 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: 🤖 Configurar Android SDK
-        uses: android-actions/setup-android@v3
+      - name: 🐘 Configurar Gradle
+        uses: gradle/actions/setup-gradle@v4
 
       - name: 📦 Instalar Dependencias de Node
-        run: npm ci || npm install --legacy-peer-deps
+        run: npm install --legacy-peer-deps
 
       - name: 🔑 Configurar Variables de Entorno Base
         run: |
@@ -93,6 +96,8 @@ jobs:
         with:
           tag_name: ${{ env.TAG_NAME }}
           name: Level Up ${{ env.TAG_NAME }}
+          draft: false
+          prerelease: false
           body: |
             ## ⚔️ Directiva del Sistema: Level Up ${{ env.TAG_NAME }}
             
