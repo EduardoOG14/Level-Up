@@ -145,27 +145,42 @@ Este repositorio cuenta con un flujo de trabajo automatizado con **GitHub Action
 
 ---
 
-## 💻 Desarrollo Local
+## 🚀 Flujo de Compilación y Distribución Continua
 
-Si deseas correr el proyecto en modo desarrollo en tu computadora con Expo Go:
+Olvídate de emuladores limitados o de aplicaciones intermediarias como Expo Go. **Level Up está configurada como una aplicación Android nativa real y autónoma**:
 
-1. **Clonar el repositorio:**
-   ```bash
-   git clone https://github.com/EduardoOG14/Level-Up.git
-   cd Level-Up
-   ```
+### 1. Generar una nueva versión con GitHub Actions
+Cada vez que realices cambios y quieras compilar una nueva versión de la app:
+```bash
+# 1. Guarda tus cambios
+git add .
+git commit -m "feat: mejoras del sistema"
 
-2. **Instalar dependencias:**
-   ```bash
-   npm install
-   ```
+# 2. Asigna la nueva versión (ej: v1.0.6) y súbela
+git tag v1.0.6
+git push origin v1.0.6
+```
+*(También puedes presionar el botón **"Run workflow"** directamente en la pestaña **Actions** de GitHub).*
 
-3. **Iniciar el servidor de desarrollo:**
-   ```bash
-   npx expo start
-   ```
+### 2. Compilación y Publicación Automática
+* Los servidores en la nube de GitHub Actions compilarán el APK nativo en **~3 minutos**.
+* El APK (`level-up-vX.X.X.apk`) se publicará de inmediato en la sección de **Releases** de tu repositorio.
 
-4. **Escanear el código QR** con la aplicación **Expo Go** en tu dispositivo móvil (Android o iOS).
+### 3. Actualización Directa en tu Teléfono
+* **Al abrir la app:** Level Up validará automáticamente en GitHub si existe una versión superior y te mostrará la ventana holográfica para descargar e instalar el APK con un solo toque.
+* **Desde el menú Cazador:** Puedes comprobar si hay nuevas versiones en cualquier momento tocando `[ BUSCAR ]` en `Actualizaciones del Sistema`.
+* **Cero pérdida de datos:** El instalador de Android actualiza la app sobre la versión anterior conservando todos tus atributos, nivel, racha y progresos.
+
+---
+
+## 💻 Ejecución Nativa en Dispositivo (Opcional)
+
+Si conectas tu teléfono por cable USB o usas un emulador de Android Studio:
+
+```bash
+# Compila y ejecuta el binario nativo directamente en tu dispositivo
+npx expo run:android
+```
 
 ---
 
