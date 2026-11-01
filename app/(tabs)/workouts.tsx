@@ -41,10 +41,13 @@ import {
   isBossRaidAvailable,
   getBossCountdown,
   getCurrentWeekKey,
+  WEEKLY_BOSSES,
   type BossCountdown,
 } from '../../constants/bosses';
+import { useBossStore } from '../../stores/bossStore';
 import { useAchievementStore } from '../../stores/achievementStore';
 import { Haptics } from '../../services/haptics';
+import { SoundEffects } from '../../services/soundEffects';
 import { RecoveryModal } from '../../components/recovery/RecoveryModal';
 import { useSmartwatchStore } from '../../stores/smartwatchStore';
 import { SMARTWATCH_BRANDS } from '../../constants/smartwatch';
@@ -84,7 +87,28 @@ const EQUIPMENT_FILTERS = [
 export default function WorkoutsScreen() {
   const { user, addXP } = useUserStore();
   const { unlockAchievement } = useAchievementStore();
-  const currentBoss = getCurrentWeeklyBoss();
+  const {
+    defeatedBossIds,
+    getActiveBoss,
+    isBossDefeated,
+    isAllBossesDefeated,
+    recordBossDefeat,
+    initialize: initBossStore,
+    resetBossProgress,
+  } = useBossStore();
+
+  useEffect(() => {
+    if (user?.uid) {
+      initBossStore(user.uid);
+    }
+  }, [user?.uid, initBossStore]);
+
+  const currentBoss = getActiveBoss();
+  const isBossDefeatedThisWeek = isBossDefeated(currentBoss.id);
+  const bossStepNumber = Math.min(
+    WEEKLY_BOSSES.length,
+    WEEKLY_BOSSES.findIndex((b) => b.id === currentBoss.id) + 1
+  );
   const {
     activePlanId,
     completedDayNumbers,
@@ -130,7 +154,6 @@ export default function WorkoutsScreen() {
   const [showDungeonModal, setShowDungeonModal] = useState(false);
   const [showRecoveryModal, setShowRecoveryModal] = useState(false);
   const [bossCountdown, setBossCountdown] = useState<BossCountdown>(getBossCountdown());
-  const [isBossDefeatedThisWeek, setIsBossDefeatedThisWeek] = useState(false);
   const currentWeekKey = getCurrentWeekKey();
   const [showKeyModal, setShowKeyModal] = useState(false);
   const { dailyManaRemaining, isUnlimited, initialize: initEnergy } = useCortexEnergyStore();
@@ -203,14 +226,6 @@ export default function WorkoutsScreen() {
     }, 1000);
     return () => clearInterval(timer);
   }, []);
-
-  useEffect(() => {
-    if (user?.uid) {
-      AsyncStorage.getItem(`@fitrise_boss_defeated_${user.uid}_${currentWeekKey}`).then((val) => {
-        setIsBossDefeatedThisWeek(val === 'true');
-      });
-    }
-  }, [user?.uid, currentWeekKey]);
 
   const activePlan = getActivePlan();
 
@@ -348,21 +363,24 @@ export default function WorkoutsScreen() {
   const handleCompleteDungeonCircuit = async (_: number, xpReward: number) => {
     await addXP(xpReward, 'strength');
     const isBossRaid = dungeonCircuit?.title.includes('Asalto Semanal');
-    if (isBossRaid && user?.uid) {
-      await unlockAchievement('boss_weekly_slayer', user.uid);
-      await AsyncStorage.setItem(`@fitrise_boss_defeated_${user.uid}_${currentWeekKey}`, 'true');
-      setIsBossDefeatedThisWeek(true);
-    }
-    Haptics.triumph();
     setShowDungeonModal(false);
     setWorkout(null);
     setDungeonCircuit(null);
-    Alert.alert(
-      isBossRaid ? '¡Jefe de Mazmorra Derrotado! 👑' : '¡Mazmorra Conquistada! 🏆',
-      isBossRaid
-        ? `Has derrotado a ${currentBoss.name} en el fin de semana de asalto. El Sistema CORTEX te otorga +${xpReward} XP y el logro "Cazador de Jefes".`
-        : `Has obtenido +${xpReward} XP del Sistema CORTEX.`
-    );
+
+    if (isBossRaid && user?.uid) {
+      const result = await recordBossDefeat(currentBoss.id, user.uid);
+      Haptics.triumph();
+      SoundEffects.playLevelUp();
+
+      const victoryMessage = result.nextBoss
+        ? `¡Has aniquilado a ${result.defeatedBoss.name}! 👑\n\nEl Sistema CORTEX te otorga +${xpReward} XP y abre el acceso al siguiente escalón del abismo: "${result.nextBoss.name}".`
+        : `¡Has aniquilado a ${result.defeatedBoss.name}! 👑\n\n¡Has vencido a todos los Monarcas del Sistema! Has alcanzado la cúspide de poder absoluto de Cazador Legendario.`;
+
+      Alert.alert('¡Jefe de Mazmorra Derrotado! ⚔️', victoryMessage);
+    } else {
+      Haptics.triumph();
+      Alert.alert('¡Mazmorra Conquistada! 🏆', `Has obtenido +${xpReward} XP del Sistema CORTEX.`);
+    }
   };
 
   const handleStartBossRaid = () => {
@@ -1089,11 +1107,13 @@ export default function WorkoutsScreen() {
                       },
                     ]}
                   >
-                    {isBossDefeatedThisWeek
-                      ? '👑 ASALTO SEMANAL CONQUISTADO'
+                    {isAllBossesDefeated()
+                      ? '👑 TODOS LOS MONARCAS DERROTADOS'
+                      : isBossDefeatedThisWeek
+                      ? `👑 JEFE DERROTADO • ESCALÓN ${bossStepNumber}/${WEEKLY_BOSSES.length}`
                       : bossCountdown.isAvailable
-                      ? '🚨 PUERTA ROJA: ASALTO AL MONARCA'
-                      : '🔒 ASALTO BLOQUEADO (FIN DE SEMANA)'}
+                      ? `🚨 PUERTA ROJA: ESCALÓN ${bossStepNumber}/${WEEKLY_BOSSES.length}`
+                      : `🔒 ESCALÓN ${bossStepNumber}/${WEEKLY_BOSSES.length} (FIN DE SEMANA)`}
                   </Text>
                 </View>
                 <View style={styles.bossRewardBadge}>
@@ -1209,10 +1229,42 @@ export default function WorkoutsScreen() {
               </View>
 
               {/* Botón de Asalto Dinámico */}
-              {isBossDefeatedThisWeek ? (
+              {isAllBossesDefeated() ? (
+                <View style={{ gap: 8 }}>
+                  <View style={styles.bossDefeatedButton}>
+                    <Ionicons name="trophy" size={18} color="#FFD700" />
+                    <Text style={[styles.bossDefeatedButtonText, { color: '#FFD700' }]}>
+                      ¡TODOS LOS MONARCAS DERROTADOS!
+                    </Text>
+                  </View>
+                  <TouchableOpacity
+                    style={[styles.bossBattleBtn, { backgroundColor: '#8B5CF6' }]}
+                    onPress={() => {
+                      Alert.alert(
+                        'Reiniciar Escalera de Monarcas',
+                        '¿Deseas reiniciar la progresión para volver a desafiar a Igris y toda la escalera en Modo Prestigio?',
+                        [
+                          { text: 'Cancelar', style: 'cancel' },
+                          {
+                            text: 'Reiniciar Escalera',
+                            style: 'destructive',
+                            onPress: () => {
+                              if (user?.uid) resetBossProgress(user.uid);
+                            },
+                          },
+                        ]
+                      );
+                    }}
+                    activeOpacity={0.85}
+                  >
+                    <Ionicons name="refresh" size={18} color="#0A0A0F" />
+                    <Text style={styles.bossBattleBtnText}>REINICIAR ESCALERA (MODO PRESTIGIO)</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : isBossDefeatedThisWeek ? (
                 <View style={styles.bossDefeatedButton}>
                   <Ionicons name="checkmark-circle" size={18} color="#10B981" />
-                  <Text style={styles.bossDefeatedButtonText}>MONARCA DERROTADO ESTA SEMANA</Text>
+                  <Text style={styles.bossDefeatedButtonText}>MONARCA DERROTADO • ACCESO AL SIGUIENTE NIVEL</Text>
                 </View>
               ) : bossCountdown.isAvailable ? (
                 <TouchableOpacity
