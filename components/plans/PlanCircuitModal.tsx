@@ -166,6 +166,11 @@ function PlanCircuitContent({
   const circuitSecondsRef = useRef<number>(guide.cadence.down);
   const circuitRepsRef = useRef<number>(0);
 
+  // Cuenta atrás táctica de 3 segundos previa al inicio del ejercicio
+  const [preCountdown, setPreCountdown] = useState<number | null>(null);
+  const preCountdownTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const countdownScaleAnim = useRef(new Animated.Value(1)).current;
+
   // Estado de la pausa de descanso de 20 segundos
   const [restSecondsLeft, setRestSecondsLeft] = useState(20);
   const [showRecovery, setShowRecovery] = useState(false);
@@ -187,9 +192,13 @@ function PlanCircuitContent({
     });
   };
 
-  // Detener voz al desmontar
+  // Detener voz y temporizador previo al desmontar
   useEffect(() => {
     return () => {
+      if (preCountdownTimerRef.current) {
+        clearInterval(preCountdownTimerRef.current);
+        preCountdownTimerRef.current = null;
+      }
       CortexVoice.stop();
     };
   }, []);
@@ -264,8 +273,8 @@ function PlanCircuitContent({
       if (stepIdx >= steps.length) {
         setActiveBriefingStep(null);
         circuitTourActiveRef.current = false;
-        speakRobot('¡Técnica explicada! Iniciamos el protocolo de ritmo.', () => {
-          skipBriefingAndStart();
+        speakRobot('¡Técnica explicada! Prepárate para iniciar.', () => {
+          startPreExerciseCountdown();
         });
         return;
       }
@@ -284,9 +293,75 @@ function PlanCircuitContent({
     playStep(0);
   };
 
-  const skipBriefingAndStart = () => {
+  // Inicia la cuenta atrás de 3 segundos con señales audiovisuales y hápticas
+  const startPreExerciseCountdown = () => {
     circuitTourActiveRef.current = false;
+    if (preCountdownTimerRef.current) {
+      clearInterval(preCountdownTimerRef.current);
+      preCountdownTimerRef.current = null;
+    }
     CortexVoice.stop();
+    setIsBriefing(false);
+    setActiveBriefingStep(null);
+    setIsCadenceActive(false);
+
+    setPreCountdown(3);
+
+    // Animación elástica para el número 3
+    countdownScaleAnim.setValue(1.4);
+    Animated.spring(countdownScaleAnim, {
+      toValue: 1,
+      friction: 5,
+      useNativeDriver: true,
+    }).start();
+
+    Haptics.medium();
+    SoundEffects.playTick();
+    if (isVoiceEnabled) {
+      speakRobot('Tres');
+    }
+
+    let currentCount = 3;
+    preCountdownTimerRef.current = setInterval(() => {
+      currentCount -= 1;
+      if (currentCount > 0) {
+        setPreCountdown(currentCount);
+
+        countdownScaleAnim.setValue(1.4);
+        Animated.spring(countdownScaleAnim, {
+          toValue: 1,
+          friction: 5,
+          useNativeDriver: true,
+        }).start();
+
+        if (currentCount === 2) {
+          Haptics.medium();
+          SoundEffects.playTick();
+          if (isVoiceEnabled) speakRobot('Dos');
+        } else if (currentCount === 1) {
+          Haptics.heavy();
+          SoundEffects.playTick();
+          if (isVoiceEnabled) speakRobot('Uno');
+        }
+      } else {
+        // Cuenta atrás terminada -> Iniciar ejercicio
+        if (preCountdownTimerRef.current) {
+          clearInterval(preCountdownTimerRef.current);
+          preCountdownTimerRef.current = null;
+        }
+        setPreCountdown(null);
+        executeStartExerciseCadence();
+      }
+    }, 1000);
+  };
+
+  // Inicia efectivamente el protocolo de cadencia tras la cuenta atrás
+  const executeStartExerciseCadence = () => {
+    if (preCountdownTimerRef.current) {
+      clearInterval(preCountdownTimerRef.current);
+      preCountdownTimerRef.current = null;
+    }
+    setPreCountdown(null);
     setIsBriefing(false);
     setActiveBriefingStep(null);
     circuitPhaseRef.current = 'down';
@@ -296,9 +371,15 @@ function PlanCircuitContent({
     setSecondsLeft(guide.cadence.down);
     setCurrentReps(0);
     setIsCadenceActive(true);
+    Haptics.triumph();
+    SoundEffects.playChime();
     if (isVoiceEnabled) {
       speakRobot('¡Iniciamos el ritmo! Sigue la cadencia.');
     }
+  };
+
+  const skipBriefingAndStart = () => {
+    startPreExerciseCountdown();
   };
 
   const handleSpeakCircuitStep = (stepIndex: number) => {
@@ -707,6 +788,11 @@ function PlanCircuitContent({
             <TouchableOpacity
               style={styles.smallBackBtn}
               onPress={() => {
+                if (preCountdownTimerRef.current) {
+                  clearInterval(preCountdownTimerRef.current);
+                  preCountdownTimerRef.current = null;
+                }
+                setPreCountdown(null);
                 CortexVoice.stop();
                 setIsCadenceActive(false);
                 setIsBriefing(false);
@@ -870,6 +956,68 @@ function PlanCircuitContent({
                   })}
                 </View>
               </View>
+            ) : preCountdown !== null ? (
+              /* Panel de Cuenta Atrás Táctica de 3 Segundos */
+              <View style={styles.countdownContainer}>
+                <View style={styles.countdownHeaderRow}>
+                  <View style={styles.countdownSystemBadge}>
+                    <Animated.View style={[styles.statusDot, { opacity: pulseAnim }]} />
+                    <Text style={styles.countdownSystemText}>SISTEMA: PREPARACIÓN</Text>
+                  </View>
+                  <Text style={styles.countdownCadenceHint}>
+                    OBJETIVO: {activeExercise.targetCount} REPS
+                  </Text>
+                </View>
+
+                {/* Círculo Holográfico Central de la Cuenta Atrás */}
+                <View style={styles.countdownCircleWrapper}>
+                  <View
+                    style={[
+                      styles.countdownOuterRing,
+                      preCountdown === 3 && styles.countdownRingCyan,
+                      preCountdown === 2 && styles.countdownRingViolet,
+                      preCountdown === 1 && styles.countdownRingEmerald,
+                    ]}
+                  >
+                    <Animated.Text
+                      style={[
+                        styles.countdownBigNumber,
+                        {
+                          transform: [{ scale: countdownScaleAnim }],
+                          color:
+                            preCountdown === 3
+                              ? '#00F0FF'
+                              : preCountdown === 2
+                              ? '#A855F7'
+                              : '#10B981',
+                        },
+                      ]}
+                    >
+                      {preCountdown}
+                    </Animated.Text>
+                  </View>
+                </View>
+
+                <Text style={styles.countdownPostureAdvice}>
+                  {preCountdown === 3
+                    ? 'COLÓCATE EN POSICIÓN'
+                    : preCountdown === 2
+                    ? 'AJUSTA TU POSTURA Y AGARRE'
+                    : '¡TODO LISTO! INICIAMOS'}
+                </Text>
+                <Text style={styles.countdownSubtext}>
+                  Iniciando ritmo en {preCountdown} segundo{preCountdown === 1 ? '' : 's'}...
+                </Text>
+
+                <TouchableOpacity
+                  style={styles.countdownSkipBtn}
+                  onPress={executeStartExerciseCadence}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="flash" size={14} color="#0A0A0F" />
+                  <Text style={styles.countdownSkipBtnText}>Comenzar de Inmediato</Text>
+                </TouchableOpacity>
+              </View>
             ) : (
               /* Panel del Entrenador de Cadencia */
               <View style={styles.cadenceCoachBox}>
@@ -967,6 +1115,17 @@ function PlanCircuitContent({
               >
                 <Ionicons name="flash" size={18} color="#0A0A0F" />
                 <Text style={styles.mainStartWorkoutBtnText}>Iniciar Repeticiones</Text>
+              </TouchableOpacity>
+            ) : preCountdown !== null ? (
+              <TouchableOpacity
+                style={[styles.mainStartWorkoutBtn, { backgroundColor: Colors.brand.primary }]}
+                onPress={executeStartExerciseCadence}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="play-forward" size={18} color="#FFFFFF" />
+                <Text style={[styles.mainStartWorkoutBtnText, { color: '#FFFFFF' }]}>
+                  Saltar Espera • Iniciar Ya
+                </Text>
               </TouchableOpacity>
             ) : (
               <>
@@ -1686,6 +1845,124 @@ const styles = StyleSheet.create({
     color: '#0A0A0F',
     fontSize: 10,
     fontWeight: 'bold',
+  },
+
+  // Panel de Cuenta Atrás Táctica de 3 Segundos
+  countdownContainer: {
+    backgroundColor: 'rgba(10, 10, 15, 0.95)',
+    borderRadius: Radius.lg,
+    padding: Spacing.lg,
+    borderWidth: 1.5,
+    borderColor: 'rgba(0, 240, 255, 0.35)',
+    alignItems: 'center',
+    marginVertical: Spacing.sm,
+  },
+  countdownHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
+    marginBottom: Spacing.md,
+  },
+  countdownSystemBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(0, 240, 255, 0.1)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: Radius.full,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 240, 255, 0.4)',
+  },
+  countdownSystemText: {
+    color: '#00F0FF',
+    fontSize: 10,
+    fontWeight: 'bold',
+    letterSpacing: 1,
+  },
+  statusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#00F0FF',
+  },
+  countdownCadenceHint: {
+    color: Colors.text.muted,
+    fontSize: 11,
+    fontWeight: 'bold',
+    letterSpacing: 0.5,
+  },
+  countdownCircleWrapper: {
+    marginVertical: Spacing.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  countdownOuterRing: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    borderWidth: 3,
+    borderColor: '#00F0FF',
+    backgroundColor: 'rgba(0, 240, 255, 0.08)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#00F0FF',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.6,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  countdownRingCyan: {
+    borderColor: '#00F0FF',
+    shadowColor: '#00F0FF',
+    backgroundColor: 'rgba(0, 240, 255, 0.08)',
+  },
+  countdownRingViolet: {
+    borderColor: '#A855F7',
+    shadowColor: '#A855F7',
+    backgroundColor: 'rgba(168, 85, 247, 0.08)',
+  },
+  countdownRingEmerald: {
+    borderColor: '#10B981',
+    shadowColor: '#10B981',
+    backgroundColor: 'rgba(16, 185, 129, 0.08)',
+  },
+  countdownBigNumber: {
+    fontSize: 64,
+    fontWeight: '900',
+    textAlign: 'center',
+    includeFontPadding: false,
+  },
+  countdownPostureAdvice: {
+    color: Colors.text.primary,
+    fontSize: 15,
+    fontWeight: 'bold',
+    letterSpacing: 1,
+    textAlign: 'center',
+    marginTop: Spacing.xs,
+  },
+  countdownSubtext: {
+    color: Colors.text.muted,
+    fontSize: 12,
+    textAlign: 'center',
+    marginTop: 4,
+    marginBottom: Spacing.md,
+  },
+  countdownSkipBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: Colors.brand.accent,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 10,
+    borderRadius: Radius.md,
+  },
+  countdownSkipBtnText: {
+    color: '#0A0A0F',
+    fontSize: 12,
+    fontWeight: 'bold',
+    letterSpacing: 0.5,
   },
 
   // Cadence Coach
