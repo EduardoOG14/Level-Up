@@ -124,6 +124,36 @@ export const ALIAS_MAP: Record<string, string> = {
   burpees: '1160', // burpee estándar
   situps: '0001', // 3/4 sit-up
   air_bike: '0003', // air bike (bicicleta abdominal cruzada)
+
+  // Protocolos de Recuperación, Flexibilidad y Descompresión
+  stretch_chest: '1271', // chest and front of shoulder stretch (descompresión pectoral y deltoides)
+  chest_decompression: '1271',
+  chest_stretch: '1271',
+  stretch_lats: '1346', // kneeling lat stretch (estiramiento de dorsales y columna en rodillas)
+  lat_stretch: '1346',
+  kneeling_lat_stretch: '1346',
+  stretch_spine: '1363', // spine stretch (descompresión de columna vertebral)
+  spine_decompression: '1363',
+  spine_stretch: '1363',
+  stretch_hamstring: '1511', // hamstring stretch (estiramiento de isquiotibiales)
+  hamstring_stretch: '1511',
+  stretch_glutes: '1424', // seated glute stretch (estiramiento de glúteos sentado)
+  glute_stretch: '1424',
+  stretch_butterfly: '1494', // butterfly yoga pose (postura de mariposa y apertura pélvica)
+  butterfly_stretch: '1494',
+  butterfly_yoga: '1494',
+  stretch_quads: '0613', // lying (side) quads stretch (estiramiento lateral de cuádriceps)
+  quad_stretch: '0613',
+  stretch_neck: '1403', // neck side stretch (descompresión cervical y trapecios)
+  neck_stretch: '1403',
+  stretch_triceps: '0817', // triceps stretch (estiramiento de tríceps)
+  triceps_stretch: '0817',
+  stretch_calves: '1377', // calf stretch with hands against wall (estiramiento de gemelos)
+  calf_stretch: '1377',
+  stretch_cobra: '1363', // spine stretch (descompresión vertebral segura)
+  cobra_stretch: '1363',
+  stretch_calm: '1346', // kneeling lat stretch (postura de calma neural y respiración)
+  neural_calm: '1346',
 };
 
 /**
@@ -305,7 +335,90 @@ export function resolveExerciseGuide(queryOrKey: string): ExerciseGuide {
     return buildGuideFromDataset(matched);
   }
 
-  // 5. Fallback seguro
+  // 5. Fallback Contextual Inteligente: Previene absolutamente que estiramientos o sentadillas caigan en flexiones
+  if (
+    normalized.includes('stretch') ||
+    normalized.includes('estira') ||
+    normalized.includes('recupera') ||
+    normalized.includes('descompre') ||
+    normalized.includes('calm') ||
+    normalized.includes('yoga') ||
+    normalized.includes('movilidad') ||
+    normalized.includes('flexib')
+  ) {
+    if (
+      normalized.includes('pierna') ||
+      normalized.includes('leg') ||
+      normalized.includes('isquio') ||
+      normalized.includes('hamstring')
+    ) {
+      return buildGuideFromDataset(EXERCISES_BY_ID.get('1511') || DEFAULT_FALLBACK_EXERCISE);
+    }
+    if (
+      normalized.includes('cuad') ||
+      normalized.includes('quad') ||
+      normalized.includes('femur')
+    ) {
+      return buildGuideFromDataset(EXERCISES_BY_ID.get('0613') || DEFAULT_FALLBACK_EXERCISE);
+    }
+    if (
+      normalized.includes('espalda') ||
+      normalized.includes('back') ||
+      normalized.includes('dorsal') ||
+      normalized.includes('columna') ||
+      normalized.includes('spine')
+    ) {
+      return buildGuideFromDataset(EXERCISES_BY_ID.get('1346') || DEFAULT_FALLBACK_EXERCISE);
+    }
+    if (
+      normalized.includes('cuello') ||
+      normalized.includes('neck') ||
+      normalized.includes('cervic')
+    ) {
+      return buildGuideFromDataset(EXERCISES_BY_ID.get('1403') || DEFAULT_FALLBACK_EXERCISE);
+    }
+    if (
+      normalized.includes('cadera') ||
+      normalized.includes('hip') ||
+      normalized.includes('glute') ||
+      normalized.includes('pelvi') ||
+      normalized.includes('mariposa')
+    ) {
+      return buildGuideFromDataset(EXERCISES_BY_ID.get('1494') || DEFAULT_FALLBACK_EXERCISE);
+    }
+    return buildGuideFromDataset(EXERCISES_BY_ID.get('1271') || DEFAULT_FALLBACK_EXERCISE);
+  }
+
+  if (
+    normalized.includes('squat') ||
+    normalized.includes('sentadilla') ||
+    normalized.includes('pierna') ||
+    normalized.includes('leg')
+  ) {
+    return buildGuideFromDataset(EXERCISES_BY_ID.get('3119') || DEFAULT_FALLBACK_EXERCISE);
+  }
+
+  if (
+    normalized.includes('pull') ||
+    normalized.includes('espalda') ||
+    normalized.includes('back') ||
+    normalized.includes('remo') ||
+    normalized.includes('row')
+  ) {
+    return buildGuideFromDataset(EXERCISES_BY_ID.get('0652') || DEFAULT_FALLBACK_EXERCISE);
+  }
+
+  if (
+    normalized.includes('plank') ||
+    normalized.includes('plancha') ||
+    normalized.includes('core') ||
+    normalized.includes('abs') ||
+    normalized.includes('abdomen')
+  ) {
+    return buildGuideFromDataset(EXERCISES_BY_ID.get('0464') || DEFAULT_FALLBACK_EXERCISE);
+  }
+
+  // 6. Fallback seguro por defecto
   return buildGuideFromDataset(DEFAULT_FALLBACK_EXERCISE);
 }
 

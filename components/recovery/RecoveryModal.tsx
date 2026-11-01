@@ -33,44 +33,64 @@ interface RecoveryStation {
 
 const RECOVERY_STATIONS: RecoveryStation[] = [
   {
-    id: 'chest_decompression',
-    name: 'Descompresión Pectoral & Hombros',
+    id: '1271',
+    name: 'Descompresión de Pectorales & Hombros',
     durationSeconds: 45,
     muscles: 'Pectorales, Deltoides Anterior y Bíceps',
-    instructions: 'Entrelaza los dedos por detrás de tu espalda baja, eleva el esternón suavemente y respira profundo sintiendo cómo se abre la caja torácica.',
-    cortexTip: 'No fuerces las articulaciones; el estiramiento debe sentirse como una liberación progresiva.',
+    instructions: 'Ponte de pie con la espalda erguida, cruza los brazos frente a tu cuerpo o entrelaza los dedos, empujando suavemente para expandir el pecho y hombros.',
+    cortexTip: 'Inhala profundamente expandiendo las costillas. La liberación de la fascia pectoral descomprime los hombros y alinea la postura.',
     emoji: '🧘‍♂️',
-    robotImageKey: 'stretch_chest',
+    robotImageKey: '1271',
   },
   {
-    id: 'hamstring_stretch',
-    name: 'Extensión Isquiotibial & Cadera',
+    id: '1346',
+    name: 'Descompresión de Dorsales & Espalda en Rodillas',
     durationSeconds: 45,
-    muscles: 'Isquiotibiales, Glúteos y Zona Lumbar',
-    instructions: 'Con una pierna adelantada apoyando el talón, flexiona la cadera llevando los glúteos hacia atrás mientras mantienes el pecho erguido.',
-    cortexTip: 'Mantiene la columna neutra para aislar correctamente la cadena posterior de las piernas.',
+    muscles: 'Dorsal Ancho, Espalda Media y Columna Vertebral',
+    instructions: 'Arrodíllate en el suelo con rodillas al ancho de caderas, extiende los brazos hacia adelante en el suelo y desciende el pecho relajando la columna.',
+    cortexTip: 'Permite que la gravedad alargue las vértebras dorsales y lumbares. Ideal para disipar la carga axial en discos intervertebrales.',
+    emoji: '🙇‍♂️',
+    robotImageKey: '1346',
+  },
+  {
+    id: '1511',
+    name: 'Extensión Isquiotibial & Cadena Posterior',
+    durationSeconds: 45,
+    muscles: 'Isquiotibiales, Glúteos y Zona Poplítea',
+    instructions: 'De pie, da un paso corto adelante apoyando el talón con la pierna extendida. Inclina el torso desde la cadera manteniendo la columna recta.',
+    cortexTip: 'Mantén la rodilla con un micro-bloqueo suave sin hiperextender. Siente la tensión elástica en el centro del muslo posterior.',
     emoji: '🦵',
-    robotImageKey: 'stretch_hamstring',
+    robotImageKey: '1511',
   },
   {
-    id: 'cobra_stretch',
-    name: 'Postura de Cobra / Alargamiento Abdominal',
+    id: '1494',
+    name: 'Postura de Mariposa & Apertura Pélvica',
     durationSeconds: 45,
-    muscles: 'Recto Abdominal, Psoas Ilíaco y Espalda',
-    instructions: 'Tumbado boca abajo, coloca las palmas bajo los hombros y eleva suavemente el torso mirando al frente con los hombros lejos de las orejas.',
-    cortexTip: 'La fascia abdominal se relaja y descomprime los discos intervertebrales.',
-    emoji: '🐍',
-    robotImageKey: 'stretch_cobra',
+    muscles: 'Aductores, Fascia Pélvica e Ingle',
+    instructions: 'Siéntate en el suelo con la columna erguida, junta las plantas de los pies y deja caer las rodillas hacia los lados sujetando tus tobillos.',
+    cortexTip: 'No rebotes con las rodillas. Deja que la respiración rítmica relaje los rotadores externos y flexores profundos de cadera.',
+    emoji: '🦋',
+    robotImageKey: '1494',
   },
   {
-    id: 'neural_calm',
-    name: 'Respiración Diafragmática & Calma Neural',
+    id: '0613',
+    name: 'Elongación Lateral de Cuádriceps',
     durationSeconds: 45,
-    muscles: 'Diafragma, Sistema Parasimpático y Mente',
-    instructions: 'Cierra los ojos. Inhala despacio en 4 segundos inflando el abdomen, mantén el aire 2 segundos y exhala vaciando todo en 4 segundos.',
-    cortexTip: 'Esta cadencia reduce el cortisol post-combate y prepara a tu cuerpo para la regeneración celular.',
-    emoji: '✨',
-    robotImageKey: 'stretch_calm',
+    muscles: 'Cuádriceps, Recto Femoral y Psoas',
+    instructions: 'Tumbado de lado, flexiona la pierna superior y sujeta el empeine o tobillo, acercando el talón hacia los glúteos sin arquear la espalda baja.',
+    cortexTip: 'Mantén ambas rodillas juntas y alineadas para evitar torsiones lesivas en los ligamentos colaterales de la rodilla.',
+    emoji: '🤸‍♂️',
+    robotImageKey: '0613',
+  },
+  {
+    id: '1403',
+    name: 'Liberación Cervical & Trapecios',
+    durationSeconds: 45,
+    muscles: 'Trapecio Superior, Elevador de la Escápula y Cuello',
+    instructions: 'Siéntate erguido, relaja los hombros y desciende lentamente la oreja hacia el hombro lateral, respirando con calma para liberar el cuello.',
+    cortexTip: 'Evita forzar con la mano. La musculatura cervical se distiende con suavidad y descarga la tensión neural acumulada.',
+    emoji: '🌿',
+    robotImageKey: '1403',
   },
 ];
 
@@ -116,13 +136,22 @@ function RecoveryContent({
   const scanAnim = useRef(new Animated.Value(0)).current;
   const isBriefingRef = useRef(isBriefing);
 
+  // Cuenta atrás táctica de 3 segundos post-explicación antes de iniciar el estiramiento
+  const [preCountdown, setPreCountdown] = useState<number | null>(null);
+  const preCountdownTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const countdownScaleAnim = useRef(new Animated.Value(1)).current;
+
   useEffect(() => {
     isBriefingRef.current = isBriefing;
   }, [isBriefing]);
 
-  // Detener voz al desmontar
+  // Detener voz y temporizador al desmontar
   useEffect(() => {
     return () => {
+      if (preCountdownTimerRef.current) {
+        clearInterval(preCountdownTimerRef.current);
+        preCountdownTimerRef.current = null;
+      }
       CortexVoice.stop();
     };
   }, []);
@@ -171,19 +200,83 @@ function RecoveryContent({
     return () => breathing.stop();
   }, []);
 
-  // Transición segura: Iniciar Conteo de la Estación
-  const startCountdown = () => {
-    if (!isBriefingRef.current) return;
+  // Iniciar la cuenta atrás de 3 segundos con señales audiovisuales y hápticas
+  const startPreStationCountdown = () => {
+    if (preCountdownTimerRef.current) {
+      clearInterval(preCountdownTimerRef.current);
+      preCountdownTimerRef.current = null;
+    }
+    CortexVoice.stop();
+    setIsBriefing(false);
+    setIsCounting(false);
+
+    setPreCountdown(3);
+    countdownScaleAnim.setValue(1.4);
+    Animated.spring(countdownScaleAnim, {
+      toValue: 1,
+      friction: 5,
+      useNativeDriver: true,
+    }).start();
+
+    Haptics.medium();
+    SoundEffects.playTick();
+    CortexVoice.speak('Tres');
+
+    let count = 3;
+    preCountdownTimerRef.current = setInterval(() => {
+      count -= 1;
+      if (count > 0) {
+        setPreCountdown(count);
+        countdownScaleAnim.setValue(1.4);
+        Animated.spring(countdownScaleAnim, {
+          toValue: 1,
+          friction: 5,
+          useNativeDriver: true,
+        }).start();
+
+        if (count === 2) {
+          Haptics.medium();
+          SoundEffects.playTick();
+          CortexVoice.speak('Dos');
+        } else if (count === 1) {
+          Haptics.heavy();
+          SoundEffects.playTick();
+          CortexVoice.speak('Uno');
+        }
+      } else {
+        if (preCountdownTimerRef.current) {
+          clearInterval(preCountdownTimerRef.current);
+          preCountdownTimerRef.current = null;
+        }
+        setPreCountdown(null);
+        executeStartStationTimer();
+      }
+    }, 1000);
+  };
+
+  // Iniciar efectivamente el temporizador de 45s de la estación tras la cuenta atrás
+  const executeStartStationTimer = () => {
+    if (preCountdownTimerRef.current) {
+      clearInterval(preCountdownTimerRef.current);
+      preCountdownTimerRef.current = null;
+    }
+    setPreCountdown(null);
     setIsBriefing(false);
     setIsCounting(true);
     SoundEffects.playChime();
-    Haptics.success();
+    Haptics.triumph();
+    CortexVoice.speak('¡Iniciamos estiramiento! Respira profundo.');
   };
 
   // Iniciar estación: 1° Fase de Explicación / Briefing de CORTEX
   useEffect(() => {
     setIsBriefing(true);
     setIsCounting(false);
+    if (preCountdownTimerRef.current) {
+      clearInterval(preCountdownTimerRef.current);
+      preCountdownTimerRef.current = null;
+    }
+    setPreCountdown(null);
     setSecondsLeft(currentStation.durationSeconds);
     setIsActive(true);
 
@@ -192,21 +285,21 @@ function RecoveryContent({
 
     // Síntesis vocal humana de la explicación completa antes de iniciar el conteo
     CortexVoice.stop();
-    const briefingText = `Estación ${stationIndex + 1}: ${currentStation.name}. ${currentStation.instructions}. ${currentStation.cortexTip}. Iniciamos conteo.`;
+    const briefingText = `Estación ${stationIndex + 1}: ${currentStation.name}. ${currentStation.instructions}. ${currentStation.cortexTip}. Prepárate para iniciar.`;
 
     CortexVoice.speak(briefingText, {
       onDone: () => {
-        startCountdown();
+        startPreStationCountdown();
       },
       onError: () => {
-        startCountdown();
+        startPreStationCountdown();
       },
     });
 
-    // Fallback de seguridad: si TTS se congela o no dispara onDone en 14 segundos, inicia automáticamente
+    // Fallback de seguridad: si TTS se congela o no dispara onDone en 16 segundos, inicia automáticamente
     const safetyTimer = setTimeout(() => {
-      startCountdown();
-    }, 14000);
+      startPreStationCountdown();
+    }, 16000);
 
     return () => {
       clearTimeout(safetyTimer);
@@ -214,9 +307,9 @@ function RecoveryContent({
     };
   }, [stationIndex]);
 
-  // Intervalo de segundo a segundo (SOLO cuando isCounting es true y no está en briefing)
+  // Intervalo de segundo a segundo (SOLO cuando isCounting es true y no está en briefing ni countdown)
   useEffect(() => {
-    if (!isActive || isFinished || isBriefing || !isCounting) return;
+    if (!isActive || isFinished || isBriefing || !isCounting || preCountdown !== null) return;
 
     const timer = setInterval(() => {
       setSecondsLeft((prev) => {
@@ -232,9 +325,14 @@ function RecoveryContent({
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [isActive, stationIndex, isFinished, isBriefing, isCounting]);
+  }, [isActive, stationIndex, isFinished, isBriefing, isCounting, preCountdown]);
 
   const handleNextStation = () => {
+    if (preCountdownTimerRef.current) {
+      clearInterval(preCountdownTimerRef.current);
+      preCountdownTimerRef.current = null;
+    }
+    setPreCountdown(null);
     CortexVoice.stop();
     if (stationIndex < RECOVERY_STATIONS.length - 1) {
       Haptics.medium();
@@ -246,10 +344,15 @@ function RecoveryContent({
 
   const handleSkipBriefing = () => {
     CortexVoice.stop();
-    startCountdown();
+    startPreStationCountdown();
   };
 
   const finishRecovery = async () => {
+    if (preCountdownTimerRef.current) {
+      clearInterval(preCountdownTimerRef.current);
+      preCountdownTimerRef.current = null;
+    }
+    setPreCountdown(null);
     setIsFinished(true);
     setIsActive(false);
     setIsCounting(false);
@@ -265,6 +368,11 @@ function RecoveryContent({
   };
 
   const handleExit = () => {
+    if (preCountdownTimerRef.current) {
+      clearInterval(preCountdownTimerRef.current);
+      preCountdownTimerRef.current = null;
+    }
+    setPreCountdown(null);
     CortexVoice.stop();
     if (onComplete) onComplete();
     onClose();
@@ -400,21 +508,81 @@ function RecoveryContent({
             style={[
               styles.timerCircle,
               {
-                borderColor: isBriefing ? '#00F0FF' : '#10B981',
-                shadowColor: isBriefing ? '#00F0FF' : '#10B981',
-                transform: [{ scale: isBriefing ? 1 : pulseAnim }],
+                borderColor:
+                  preCountdown !== null
+                    ? preCountdown === 3
+                      ? '#00F0FF'
+                      : preCountdown === 2
+                      ? '#A855F7'
+                      : '#10B981'
+                    : isBriefing
+                    ? '#00F0FF'
+                    : '#10B981',
+                shadowColor:
+                  preCountdown !== null
+                    ? preCountdown === 3
+                      ? '#00F0FF'
+                      : preCountdown === 2
+                      ? '#A855F7'
+                      : '#10B981'
+                    : isBriefing
+                    ? '#00F0FF'
+                    : '#10B981',
+                transform: [
+                  {
+                    scale:
+                      preCountdown !== null
+                        ? countdownScaleAnim
+                        : isBriefing
+                        ? 1
+                        : pulseAnim,
+                  },
+                ],
               },
             ]}
           >
-            <Text style={styles.stationEmoji}>{currentStation.emoji}</Text>
-            <Text style={styles.timerNumber}>{secondsLeft}s</Text>
+            <Text style={styles.stationEmoji}>
+              {preCountdown !== null ? '⏱️' : currentStation.emoji}
+            </Text>
+            <Text
+              style={[
+                styles.timerNumber,
+                preCountdown !== null && {
+                  fontSize: 54,
+                  fontWeight: '900',
+                  color:
+                    preCountdown === 3
+                      ? '#00F0FF'
+                      : preCountdown === 2
+                      ? '#A855F7'
+                      : '#10B981',
+                },
+              ]}
+            >
+              {preCountdown !== null ? preCountdown : `${secondsLeft}s`}
+            </Text>
             <Text
               style={[
                 styles.timerLabel,
-                { color: isBriefing ? '#00F0FF' : '#10B981' },
+                {
+                  color:
+                    preCountdown !== null
+                      ? '#00F0FF'
+                      : isBriefing
+                      ? '#00F0FF'
+                      : '#10B981',
+                },
               ]}
             >
-              {isBriefing ? 'EN ESPERA (EXPLICACIÓN)' : 'RESPIRACIÓN PROFUNDA'}
+              {preCountdown !== null
+                ? preCountdown === 3
+                  ? 'COLÓCATE EN POSICIÓN'
+                  : preCountdown === 2
+                  ? 'AJUSTA TU POSTURA'
+                  : '¡TODO LISTO!'
+                : isBriefing
+                ? 'EN ESPERA (EXPLICACIÓN)'
+                : 'RESPIRACIÓN PROFUNDA'}
             </Text>
           </Animated.View>
 
@@ -424,8 +592,8 @@ function RecoveryContent({
               style={[
                 styles.progressBarFill,
                 {
-                  width: isBriefing ? '0%' : `${progressPercent}%`,
-                  backgroundColor: isBriefing ? '#00F0FF' : '#10B981',
+                  width: isBriefing || preCountdown !== null ? '0%' : `${progressPercent}%`,
+                  backgroundColor: isBriefing || preCountdown !== null ? '#00F0FF' : '#10B981',
                 },
               ]}
             />
@@ -451,8 +619,9 @@ function RecoveryContent({
             <TouchableOpacity
               style={styles.pauseBtn}
               onPress={() => {
-                if (isBriefing) {
-                  // Si está en briefing y pausa, inicia de inmediato o frena
+                if (preCountdown !== null) {
+                  executeStartStationTimer();
+                } else if (isBriefing) {
                   handleSkipBriefing();
                 } else {
                   setIsActive(!isActive);
@@ -462,12 +631,18 @@ function RecoveryContent({
               activeOpacity={0.7}
             >
               <Ionicons
-                name={isActive && !isBriefing ? 'pause' : 'play'}
+                name={isActive && !isBriefing && preCountdown === null ? 'pause' : 'play'}
                 size={20}
                 color={Colors.text.primary}
               />
               <Text style={styles.pauseBtnText}>
-                {isBriefing ? 'Iniciar Ya' : isActive ? 'Pausar' : 'Reanudar'}
+                {preCountdown !== null
+                  ? 'Comenzar Ya'
+                  : isBriefing
+                  ? 'Iniciar Ya'
+                  : isActive
+                  ? 'Pausar'
+                  : 'Reanudar'}
               </Text>
             </TouchableOpacity>
 

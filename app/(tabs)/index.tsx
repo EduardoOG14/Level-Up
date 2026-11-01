@@ -20,6 +20,7 @@ import { type Quest } from '../../components/gamification/QuestCard';
 import { QuestDetailModal } from '../../components/gamification/QuestDetailModal';
 import {
   EXERCISE_GUIDES,
+  resolveExerciseGuide,
   isExerciseAvailable,
   getBodyweightAlternativeKey,
 } from '../../constants/exercises';
@@ -334,9 +335,35 @@ export default function HomeScreen() {
     const userEq = userContext?.equipment || ['none'];
     let guide = EXERCISE_GUIDES.default;
 
-    if (text.includes('diamante') || text.includes('diamond') || index === 3) {
+    // 1. Si la quest trae una clave directa o ID de ejercicio, resolverla prioritariamente
+    if (q.exerciseId || q.imageKey || q.exerciseKey) {
+      guide = resolveExerciseGuide(q.exerciseId || q.imageKey || q.exerciseKey);
+    } else if (
+      text.includes('estira') ||
+      text.includes('stretch') ||
+      text.includes('descompre') ||
+      text.includes('recupera') ||
+      text.includes('movilidad') ||
+      text.includes('mariposa') ||
+      text.includes('yoga')
+    ) {
+      // Prioridad alta a protocolos de recuperación/estiramiento: previene que "pecho" active flexiones
+      if (text.includes('pecho') || text.includes('hombro') || text.includes('pectoral')) {
+        guide = resolveExerciseGuide('1271');
+      } else if (text.includes('espalda') || text.includes('dorsal') || text.includes('columna')) {
+        guide = resolveExerciseGuide('1346');
+      } else if (text.includes('isquio') || text.includes('hamstring') || text.includes('pierna')) {
+        guide = resolveExerciseGuide('1511');
+      } else if (text.includes('cuad') || text.includes('quad')) {
+        guide = resolveExerciseGuide('0613');
+      } else if (text.includes('cuello') || text.includes('cervic')) {
+        guide = resolveExerciseGuide('1403');
+      } else {
+        guide = resolveExerciseGuide('1494');
+      }
+    } else if (text.includes('diamante') || text.includes('diamond')) {
       guide = (EXERCISE_GUIDES as any).diamond || EXERCISE_GUIDES.pushups;
-    } else if (text.includes('zancada') || text.includes('lunge') || index === 4) {
+    } else if (text.includes('zancada') || text.includes('lunge')) {
       guide = (EXERCISE_GUIDES as any).lunges || EXERCISE_GUIDES.squats;
     } else if (text.includes('plancha') || text.includes('plank')) {
       guide = (EXERCISE_GUIDES as any).plank || EXERCISE_GUIDES.pushups;
@@ -348,16 +375,24 @@ export default function HomeScreen() {
       guide = isExerciseAvailable('dips', userEq)
         ? (EXERCISE_GUIDES as any).dips
         : (EXERCISE_GUIDES as any).diamond;
-    } else if (text.includes('sentadilla') || text.includes('squat') || text.includes('pierna') || index === 1) {
+    } else if (text.includes('sentadilla') || text.includes('squat') || text.includes('pierna')) {
       guide = EXERCISE_GUIDES.squats;
     } else if (text.includes('biceps') || text.includes('curl') || text.includes('brazo')) {
       guide = isExerciseAvailable('curls', userEq)
         ? EXERCISE_GUIDES.curls
         : (EXERCISE_GUIDES as any).diamond;
-    } else if (text.includes('pica') || text.includes('pike') || index === 2) {
+    } else if (text.includes('pica') || text.includes('pike')) {
       guide = (EXERCISE_GUIDES as any).pike || EXERCISE_GUIDES.pushups;
-    } else if (text.includes('flexion') || text.includes('push') || text.includes('pecho') || index === 0) {
+    } else if (text.includes('flexion') || text.includes('push') || text.includes('pecho')) {
       guide = EXERCISE_GUIDES.pushups;
+    } else {
+      // Fallback por índice únicamente si el texto no coincidió con ninguna categoría
+      if (index === 0) guide = EXERCISE_GUIDES.pushups;
+      else if (index === 1) guide = EXERCISE_GUIDES.squats;
+      else if (index === 2) guide = (EXERCISE_GUIDES as any).pike || EXERCISE_GUIDES.pushups;
+      else if (index === 3) guide = (EXERCISE_GUIDES as any).diamond || EXERCISE_GUIDES.pushups;
+      else if (index === 4) guide = (EXERCISE_GUIDES as any).lunges || EXERCISE_GUIDES.squats;
+      else guide = EXERCISE_GUIDES.pushups;
     }
 
     // Garantía absoluta: si el ejercicio requiere equipo que el usuario no tiene, sustituirlo por peso corporal
@@ -383,6 +418,7 @@ export default function HomeScreen() {
       statBoost: q.statBoost || { stat: (index === 1 || index === 4 ? 'agility' : 'strength'), value: (index >= 3 ? 2 : 1) },
       icon: isPenaltyActive ? '🚨' : (q.icon || (index === 0 ? '⚔️' : index === 1 ? '🦵' : index === 2 ? '💪' : index === 3 ? '💎' : '⚡')),
       completed: q.completed ?? false,
+      exerciseKey: guide.id,
       exerciseName: q.exerciseName || guide.name,
       targetMuscles: q.targetMuscles || guide.muscles,
       sets: q.sets || guide.sets,
