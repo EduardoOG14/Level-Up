@@ -46,6 +46,8 @@ import { CORTEXNotifications } from '../../services/notifications';
 import { SmartwatchSyncModal } from '../../components/smartwatch/SmartwatchSyncModal';
 import { useSmartwatchStore } from '../../stores/smartwatchStore';
 import { PlanCircuitModal, type CustomCircuitData } from '../../components/plans/PlanCircuitModal';
+import { TodayWorkoutCard } from '../../components/dashboard/TodayWorkoutCard';
+import { DailyRewardChestModal } from '../../components/gamification/DailyRewardChestModal';
 
 // Obtiene la clave de fecha del día actual YYYY-MM-DD
 const getTodayDateKey = (): string => {
@@ -177,7 +179,7 @@ export const DEFAULT_FIVE_QUESTS: Quest[] = [
 
 export default function HomeScreen() {
   const { user, addXP, updateStreak, updateProfile, isLoading } = useUserStore();
-  const { isCurrentPlanCompleted, getActivePlan } = usePlanStore();
+  const { isCurrentPlanCompleted, getActivePlan, completedDayNumbers, completePlanDay } = usePlanStore();
   const router = useRouter();
   const [quests, setQuests] = useState<Quest[]>([]);
   const [selectedQuest, setSelectedQuest] = useState<Quest | null>(null);
@@ -190,9 +192,24 @@ export default function HomeScreen() {
   const [showAdaptedCircuitModal, setShowAdaptedCircuitModal] = useState(false);
   const [smartwatchCircuitData, setSmartwatchCircuitData] = useState<CustomCircuitData | null>(null);
   const [streakStatus, setStreakStatus] = useState<DailyStreakStatus | null>(null);
+  const [showDailyChestModal, setShowDailyChestModal] = useState(false);
+  const [isDailyChestClaimedToday, setIsDailyChestClaimedToday] = useState(false);
+  const [showTodayPlanModal, setShowTodayPlanModal] = useState(false);
+  const [isSoundMuted, setIsSoundMuted] = useState(!SoundEffects.getIsEnabled());
   const [cortexTip, setCortexTip] = useState<string>(
     'Controla la cadencia excéntrica en cada repetición para potenciar la hipertrofia y la fortaleza neural. ⚡'
   );
+
+  const checkDailyChestStatus = useCallback(async () => {
+    try {
+      const todayKey = getTodayDateKey();
+      const uid = user?.uid || 'guest';
+      const claimed = await AsyncStorage.getItem(`@fitrise_daily_chest_${uid}_${todayKey}`);
+      setIsDailyChestClaimedToday(claimed === 'claimed');
+    } catch {
+      // Ignorar error de lectura local
+    }
+  }, [user?.uid]);
 
   const refreshStreakStatus = useCallback(async () => {
     if (!user?.uid) return;
@@ -203,7 +220,9 @@ export default function HomeScreen() {
   useFocusEffect(
     useCallback(() => {
       refreshStreakStatus();
-    }, [refreshStreakStatus])
+      checkDailyChestStatus();
+      setIsSoundMuted(!SoundEffects.getIsEnabled());
+    }, [refreshStreakStatus, checkDailyChestStatus])
   );
 
   // Pulso continuo del Sistema Solo Leveling
@@ -247,7 +266,7 @@ export default function HomeScreen() {
     metrics: watchMetrics,
   } = useSmartwatchStore();
   const { loadProgress, recordDailyQuestsCompleted } = useProgressStore();
-  const { loadTodayWater, currentMl, targetMl, cupsDrank, drinkCup, undoCup } = useWaterStore();
+  const { loadTodayWater, currentMl, targetMl, cupsDrank, drinkCup, drinkCups, undoCup } = useWaterStore();
   const { loadAchievements, checkAutomaticAchievements } = useAchievementStore();
   const { currentTitle, loadAndEvaluateTitle } = useTitleStore();
   const { isPenaltyActive, checkAndTriggerPenalty, resolvePenalty } = usePenaltyStore();
@@ -633,6 +652,13 @@ export default function HomeScreen() {
     }
   };
 
+  const currentActivePlan = getActivePlan();
+  const nextPendingPlanDay = currentActivePlan
+    ? currentActivePlan.daysSchedule.find((d) => !completedDayNumbers.includes(d.dayNumber)) ||
+      currentActivePlan.daysSchedule[0]
+    : null;
+  const activeDayNumber = nextPendingPlanDay?.dayNumber || 1;
+
   if (!user || !user.goals || user.goals.length === 0) {
     return (
       <SafeAreaView style={[styles.safe, { justifyContent: 'center', alignItems: 'center' }]}>
@@ -669,6 +695,44 @@ export default function HomeScreen() {
             <Animated.View style={[styles.systemLiveDot, { transform: [{ scale: liveScale }] }]} />
             <Text style={styles.systemBadgeTag}>[ SISTEMA: ESTADO DEL CAZADOR ]</Text>
             <Text style={styles.systemBadgeSub}>CORTEX V1.0</Text>
+          </View>
+
+          {/* Acciones Rápidas del Cazador: Cofre Diario y Audio Mute */}
+          <View style={styles.systemHeaderActions}>
+            <TouchableOpacity
+              style={[
+                styles.systemChestBtn,
+                isDailyChestClaimedToday && styles.systemChestBtnClaimed,
+              ]}
+              onPress={() => {
+                Haptics.light();
+                setShowDailyChestModal(true);
+              }}
+              activeOpacity={0.75}
+            >
+              <Text style={styles.systemChestBtnEmoji}>
+                {isDailyChestClaimedToday ? '💎' : '🎁'}
+              </Text>
+              <Text style={styles.systemChestBtnText}>
+                {isDailyChestClaimedToday ? 'Reclamado' : 'Cofre'}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.systemAudioToggleBtn}
+              onPress={async () => {
+                const next = await SoundEffects.toggleEnabled();
+                setIsSoundMuted(!next);
+                Haptics.light();
+              }}
+              activeOpacity={0.75}
+            >
+              <Ionicons
+                name={isSoundMuted ? 'volume-mute' : 'volume-high'}
+                size={15}
+                color={isSoundMuted ? '#64748B' : '#00F0FF'}
+              />
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -818,9 +882,35 @@ export default function HomeScreen() {
               <View style={[styles.telemetryProgressBarFillWater, { width: `${waterProgress}%` }]} />
             </View>
 
-            <View style={styles.telemetryActionBtn}>
-              <Ionicons name="add-circle-outline" size={16} color="#00F0FF" />
-              <Text style={styles.telemetryActionBtnText}>+250 ml (Tocar)</Text>
+            {/* Chips de Registro Rápido: Vaso 250ml / Botella 500ml */}
+            <View style={styles.hydrationChipsRow}>
+              <TouchableOpacity
+                style={styles.hydrationChipBtn}
+                onPress={() => {
+                  if (user?.uid) {
+                    SoundEffects.playWaterDrop();
+                    drinkCup(user.uid);
+                  }
+                }}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="water-outline" size={12} color="#00F0FF" />
+                <Text style={styles.hydrationChipText}>+250 ml</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.hydrationChipBtn}
+                onPress={() => {
+                  if (user?.uid) {
+                    SoundEffects.playWaterDrop();
+                    drinkCups(user.uid, 2);
+                  }
+                }}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="flask-outline" size={12} color="#00F0FF" />
+                <Text style={styles.hydrationChipText}>+500 ml</Text>
+              </TouchableOpacity>
             </View>
           </TouchableOpacity>
 
@@ -877,6 +967,16 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </View>
 
+        {/* DIRECTIVA TÁCTICA DEL DÍA: ACCESO DIRECTO 1-TAP AL ENTRENAMIENTO */}
+        <TodayWorkoutCard
+          activePlan={currentActivePlan || null}
+          activePlanDay={activeDayNumber}
+          isCompletedToday={streakStatus?.isRoutineCompleted ?? false}
+          completedTitle={streakStatus?.completedRoutineTitle}
+          onStartTodayWorkout={() => setShowTodayPlanModal(true)}
+          onExplorePlans={() => router.push('/(tabs)/workouts')}
+        />
+
         {/* 5. PACTO DE RACHA: ESTADO RIGUROSO (MISIONES + RUTINA) */}
         <StreakStatusCard
           streak={user.streak}
@@ -886,8 +986,15 @@ export default function HomeScreen() {
           isRoutineCompleted={streakStatus?.isRoutineCompleted ?? false}
           routineTitle={streakStatus?.completedRoutineTitle}
           isPenaltyActive={isPenaltyActive}
+          shieldsCount={streakStatus?.shieldsAvailable}
           onPressQuests={() => {}}
-          onPressRoutine={() => router.push('/(tabs)/workouts')}
+          onPressRoutine={() => {
+            if (currentActivePlan) {
+              setShowTodayPlanModal(true);
+            } else {
+              router.push('/(tabs)/workouts');
+            }
+          }}
         />
 
         {/* Banner de Aviso: Plan Conquistado al 100% */}
@@ -1105,6 +1212,37 @@ export default function HomeScreen() {
         onClose={() => setShowAdaptedCircuitModal(false)}
         onCompleteDay={handleCompleteAdaptedCircuit}
       />
+
+      {/* Modal de Circuito de Entrenamiento Diario (Lanzador Directo desde Home) */}
+      <PlanCircuitModal
+        visible={showTodayPlanModal}
+        plan={currentActivePlan || null}
+        dayNumber={activeDayNumber}
+        autoStart={false}
+        onClose={() => setShowTodayPlanModal(false)}
+        onCompleteDay={async (dayNum, xpReward) => {
+          setShowTodayPlanModal(false);
+          if (currentActivePlan) {
+            await completePlanDay(dayNum);
+            if (user?.uid) {
+              const dayObj = currentActivePlan.daysSchedule.find((d) => d.dayNumber === dayNum);
+              const routineTitle = dayObj ? `${currentActivePlan.title} - Día ${dayNum}` : currentActivePlan.title;
+              await StreakEngine.recordRoutineCompleted(user.uid, routineTitle, xpReward);
+              await refreshStreakStatus();
+            }
+          }
+        }}
+      />
+
+      {/* Modal de Suministros Diarios del Sistema Solo Leveling */}
+      <DailyRewardChestModal
+        visible={showDailyChestModal}
+        onClose={() => setShowDailyChestModal(false)}
+        onClaimed={async () => {
+          setIsDailyChestClaimedToday(true);
+          await refreshStreakStatus();
+        }}
+      />
     </SafeAreaView>
   );
 }
@@ -1121,6 +1259,68 @@ const styles = StyleSheet.create({
   // Header del Sistema Solo Leveling
   systemHeader: {
     marginBottom: -4,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  systemHeaderActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  systemChestBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#0F121E',
+    borderWidth: 1,
+    borderColor: 'rgba(0, 240, 255, 0.3)',
+    borderRadius: Radius.full,
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+  },
+  systemChestBtnClaimed: {
+    borderColor: 'rgba(16, 185, 129, 0.3)',
+  },
+  systemChestBtnEmoji: {
+    fontSize: 12,
+  },
+  systemChestBtnText: {
+    color: '#00F0FF',
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.3,
+  },
+  systemAudioToggleBtn: {
+    backgroundColor: '#0F121E',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: Radius.full,
+    padding: 6,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  hydrationChipsRow: {
+    flexDirection: 'row',
+    gap: 6,
+    marginTop: 6,
+  },
+  hydrationChipBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(0, 240, 255, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(0, 240, 255, 0.25)',
+    borderRadius: Radius.sm,
+    paddingVertical: 4,
+  },
+  hydrationChipText: {
+    color: '#00F0FF',
+    fontSize: 10,
+    fontWeight: '800',
   },
   systemBadgeRow: {
     flexDirection: 'row',

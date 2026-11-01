@@ -35,6 +35,12 @@ class SoundEffectsService {
     return this.isEnabled;
   }
 
+  public async toggleEnabled(): Promise<boolean> {
+    const next = !this.isEnabled;
+    await this.setEnabled(next);
+    return next;
+  }
+
   /**
    * Campana suave de inicio de estación o fin de descanso
    */

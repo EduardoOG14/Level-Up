@@ -11,6 +11,7 @@ interface StreakStatusCardProps {
   isRoutineCompleted: boolean;
   routineTitle?: string;
   isPenaltyActive?: boolean;
+  shieldsCount?: number;
   onPressQuests?: () => void;
   onPressRoutine?: () => void;
 }
@@ -23,6 +24,7 @@ export function StreakStatusCard({
   isRoutineCompleted,
   routineTitle,
   isPenaltyActive = false,
+  shieldsCount,
   onPressQuests,
   onPressRoutine,
 }: StreakStatusCardProps) {
@@ -122,6 +124,18 @@ export function StreakStatusCard({
           </View>
         </TouchableOpacity>
       </View>
+
+      {/* Escudo Protector de Racha */}
+      {typeof shieldsCount === 'number' && (
+        <View style={styles.shieldRow}>
+          <Ionicons name="shield-checkmark" size={13} color="#00F0FF" />
+          <Text style={styles.shieldText}>
+            {shieldsCount > 0
+              ? `${shieldsCount} ${shieldsCount === 1 ? 'Escudo Protector disponible' : 'Escudos Protectores disponibles'}`
+              : '0 Escudos Protectores • Gana 1 cada 7 días de racha'}
+          </Text>
+        </View>
+      )}
     </View>
   );
 }
@@ -294,5 +308,20 @@ const styles = StyleSheet.create({
   },
   statusBadgeTextNeutral: {
     color: '#94A3B8',
+  },
+  shieldRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 10,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.05)',
+  },
+  shieldText: {
+    color: '#00F0FF',
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0.2,
   },
 });

@@ -1077,7 +1077,7 @@ export default function WorkoutsScreen() {
               <View style={{ flex: 1 }}>
                 <Text style={styles.recoveryCardTitle}>[ PROTOCOLO DE RECUPERACIÓN TÁCTICA ]</Text>
                 <Text style={styles.recoveryCardSub}>
-                  4 estaciones de estiramiento y calma neural • +25 XP Vitalidad
+                  6 estaciones de estiramiento y calma neural • +25 XP Vitalidad
                 </Text>
               </View>
               <Ionicons name="chevron-forward" size={16} color="#10B981" />

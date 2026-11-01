@@ -4,6 +4,7 @@ import { useProgressStore } from '../stores/progressStore';
 import { usePenaltyStore } from '../stores/penaltyStore';
 import { Haptics } from './haptics';
 import { SoundEffects } from './soundEffects';
+import { StreakShieldService } from './streakShieldService';
 
 export interface DailyStreakStatus {
   dateKey: string;
@@ -14,6 +15,8 @@ export interface DailyStreakStatus {
   isFullDayCompleted: boolean;
   isStreakAdvancedToday: boolean;
   currentStreak: number;
+  shieldsAvailable?: number;
+  wasShieldActivatedToday?: boolean;
 }
 
 export interface StreakAdvanceResult {
@@ -103,6 +106,7 @@ class StreakEngineService {
       const isStreakAdvancedToday = advancedRaw === 'true' || currentUser?.lastActiveDate === todayKey;
 
       const isFullDayCompleted = areQuestsCompleted && isRoutineCompleted;
+      const shieldsAvailable = await StreakShieldService.getShieldCount(uid);
 
       return {
         dateKey: todayKey,
@@ -113,6 +117,7 @@ class StreakEngineService {
         isFullDayCompleted,
         isStreakAdvancedToday,
         currentStreak,
+        shieldsAvailable,
       };
     } catch (err) {
       console.warn('Error leyendo estado diario de racha:', err);
@@ -124,6 +129,7 @@ class StreakEngineService {
         isFullDayCompleted: false,
         isStreakAdvancedToday: false,
         currentStreak,
+        shieldsAvailable: 1,
       };
     }
   }
@@ -249,6 +255,11 @@ class StreakEngineService {
     // Guardar flag de avance de racha hoy
     await AsyncStorage.setItem(advancedKey, 'true');
 
+    // Bonificación de Escudo Protector cada 7 días de racha continua
+    if (newStreak % 7 === 0) {
+      await StreakShieldService.awardShield(uid, 1);
+    }
+
     // Si estaba activa la zona de castigo, resolverla con honores
     const penaltyStore = usePenaltyStore.getState();
     if (penaltyStore.isPenaltyActive) {
@@ -270,7 +281,9 @@ class StreakEngineService {
   /**
    * Valida la racha al iniciar la aplicación.
    * Si el usuario no cumplió ayer con la directiva completa (misiones + rutina) y tenía racha,
-   * se activa la Zona de Castigo o se reinicia la racha.
+   * se verifica si tiene un Escudo Protector disponible.
+   * Si tiene escudo, el escudo absorbe la falta y protege la racha.
+   * Si no tiene escudo, se activa la Zona de Castigo o se reinicia la racha.
    */
   async validateStreakOnAppLaunch(uid: string): Promise<void> {
     const todayKey = getLocalDateKey();
@@ -288,7 +301,17 @@ class StreakEngineService {
       lastActive === new Date(Date.now() - 86400000).toDateString();
 
     if (!isActiveRecently) {
-      // Perdió el día de ayer: verificar o activar Zona de Castigo para darle 24h de rescate
+      // Intentar consumir un Escudo Protector de Racha del Sistema
+      const shieldConsumed = await StreakShieldService.consumeShield(uid, todayKey);
+      if (shieldConsumed) {
+        // El escudo salvó la racha: ajustamos el último día activo a ayer para continuar la racha hoy
+        await useUserStore.getState().updateProfile({
+          lastActiveDate: yesterdayKey,
+        });
+        return;
+      }
+
+      // Sin escudo: verificar o activar Zona de Castigo para darle 24h de rescate
       const penaltyStore = usePenaltyStore.getState();
       const isPenaltyActive = await penaltyStore.checkAndTriggerPenalty(
         uid,

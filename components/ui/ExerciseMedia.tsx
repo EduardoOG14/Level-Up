@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ActivityIndicator, Text } from 'react-native';
 import { Image as ExpoImage } from 'expo-image';
 import { Colors } from '../../constants/theme';
@@ -23,6 +23,14 @@ export function ExerciseMedia({
   // Priorizar el raw directo de GitHub para evitar bloqueos por cuota de 50MB en jsDelivr
   const initialUri = rawGifUrl || gifUrl;
   const [currentUri, setCurrentUri] = useState<string | undefined>(initialUri);
+
+  // Sincronizar dinámicamente cuando cambian las props de URL (ej. al avanzar estaciones en el modal)
+  useEffect(() => {
+    const nextUri = rawGifUrl || gifUrl;
+    setCurrentUri(nextUri);
+    setHasError(false);
+    setLoading(true);
+  }, [rawGifUrl, gifUrl]);
 
   // Sanitizar el thumbnail para asegurar que use raw.githubusercontent.com y no falle con 403
   const safeThumbnailUrl = thumbnailUrl

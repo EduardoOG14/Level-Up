@@ -341,10 +341,13 @@ export function resolveExerciseGuide(queryOrKey: string): ExerciseGuide {
     normalized.includes('estira') ||
     normalized.includes('recupera') ||
     normalized.includes('descompre') ||
+    normalized.includes('enfria') ||
     normalized.includes('calm') ||
     normalized.includes('yoga') ||
     normalized.includes('movilidad') ||
-    normalized.includes('flexib')
+    normalized.includes('flexib') ||
+    normalized.includes('relaj') ||
+    normalized.includes('descanso')
   ) {
     if (
       normalized.includes('pierna') ||
@@ -385,6 +388,14 @@ export function resolveExerciseGuide(queryOrKey: string): ExerciseGuide {
       normalized.includes('mariposa')
     ) {
       return buildGuideFromDataset(EXERCISES_BY_ID.get('1494') || DEFAULT_FALLBACK_EXERCISE);
+    }
+    if (
+      normalized.includes('pecho') ||
+      normalized.includes('chest') ||
+      normalized.includes('hombro') ||
+      normalized.includes('shoulder')
+    ) {
+      return buildGuideFromDataset(EXERCISES_BY_ID.get('1167') || DEFAULT_FALLBACK_EXERCISE);
     }
     return buildGuideFromDataset(EXERCISES_BY_ID.get('1167') || DEFAULT_FALLBACK_EXERCISE);
   }

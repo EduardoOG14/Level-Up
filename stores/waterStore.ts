@@ -30,6 +30,7 @@ interface WaterStore {
   // Acciones
   loadTodayWater: (uid: string) => Promise<void>;
   drinkCup: (uid: string) => Promise<{ isFull: boolean }>;
+  drinkCups: (uid: string, cupsCount: number) => Promise<{ isFull: boolean }>;
   undoCup: (uid: string) => Promise<void>;
   resetWater: () => void;
   isWaterFullToday: () => boolean;
@@ -124,6 +125,60 @@ export const useWaterStore = create<WaterStore>((set, get) => ({
     }
 
     // Persistir estado del día
+    try {
+      const todayKey = getTodayDateKey();
+      const storageKey = `@fitrise_water_${todayKey}_${uid}`;
+      await AsyncStorage.setItem(
+        storageKey,
+        JSON.stringify({
+          cupsDrank: newCount,
+          bonusClaimed: bonusClaimed || shouldClaimBonus,
+          lastDrinkTimestamp: nowTimestamp,
+        })
+      );
+    } catch (e) {
+      console.warn('Error persisting water intake:', e);
+    }
+
+    return { isFull: isNowFull };
+  },
+
+  drinkCups: async (uid: string, cupsCount: number) => {
+    const { cupsDrank, targetMl, bonusClaimed } = get();
+    const targetCups = Math.max(Math.round(targetMl / ML_PER_CUP), 7);
+    if (cupsDrank >= targetCups) {
+      return { isFull: true };
+    }
+
+    const addition = Math.max(cupsCount, 1);
+    const newCount = Math.min(cupsDrank + addition, targetCups);
+    const isNowFull = newCount >= targetCups;
+    const nowTimestamp = Date.now();
+    let shouldClaimBonus = false;
+
+    if (isNowFull && !bonusClaimed) {
+      shouldClaimBonus = true;
+    }
+
+    set({
+      cupsDrank: newCount,
+      currentMl: newCount * ML_PER_CUP,
+      targetMl,
+      completedToday: isNowFull,
+      bonusClaimed: bonusClaimed || shouldClaimBonus,
+      lastDrinkTimestamp: nowTimestamp,
+    });
+
+    const xpEarned = (newCount - cupsDrank) * 10;
+    await useUserStore.getState().addXP(xpEarned, 'vitality');
+
+    if (shouldClaimBonus) {
+      await useUserStore.getState().addXP(50, 'vitality');
+      Haptics.success();
+    } else {
+      Haptics.light();
+    }
+
     try {
       const todayKey = getTodayDateKey();
       const storageKey = `@fitrise_water_${todayKey}_${uid}`;
