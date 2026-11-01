@@ -366,13 +366,15 @@ export default function HomeScreen() {
     ) {
       // Prioridad alta a protocolos de recuperación/estiramiento: previene que "pecho" active flexiones
       if (text.includes('pecho') || text.includes('hombro') || text.includes('pectoral')) {
-        guide = resolveExerciseGuide('1271');
+        guide = resolveExerciseGuide('1167');
       } else if (text.includes('espalda') || text.includes('dorsal') || text.includes('columna')) {
         guide = resolveExerciseGuide('1346');
       } else if (text.includes('isquio') || text.includes('hamstring') || text.includes('pierna')) {
         guide = resolveExerciseGuide('1511');
+      } else if (text.includes('glute') || text.includes('cadera') || text.includes('piriforme')) {
+        guide = resolveExerciseGuide('1424');
       } else if (text.includes('cuad') || text.includes('quad')) {
-        guide = resolveExerciseGuide('0613');
+        guide = resolveExerciseGuide('1512');
       } else if (text.includes('cuello') || text.includes('cervic')) {
         guide = resolveExerciseGuide('1403');
       } else {

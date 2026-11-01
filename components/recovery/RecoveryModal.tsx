@@ -33,14 +33,14 @@ interface RecoveryStation {
 
 const RECOVERY_STATIONS: RecoveryStation[] = [
   {
-    id: '1271',
+    id: '1167',
     name: 'Descompresión de Pectorales & Hombros',
     durationSeconds: 45,
     muscles: 'Pectorales, Deltoides Anterior y Bíceps',
-    instructions: 'Ponte de pie con la espalda erguida, cruza los brazos frente a tu cuerpo o entrelaza los dedos, empujando suavemente para expandir el pecho y hombros.',
-    cortexTip: 'Inhala profundamente expandiendo las costillas. La liberación de la fascia pectoral descomprime los hombros y alinea la postura.',
+    instructions: 'Ponte de pie con la espalda erguida, extiende los brazos lateralmente abriendo la caja torácica y crúzalos al frente de forma dinámica y rítmica.',
+    cortexTip: 'Inhala al expandir el pecho y exhala al cruzar los brazos. Esta oscilación descomprime los deltoides anteriores y la fascia pectoral.',
     emoji: '🧘‍♂️',
-    robotImageKey: '1271',
+    robotImageKey: '1167',
   },
   {
     id: '1346',
@@ -57,7 +57,7 @@ const RECOVERY_STATIONS: RecoveryStation[] = [
     name: 'Extensión Isquiotibial & Cadena Posterior',
     durationSeconds: 45,
     muscles: 'Isquiotibiales, Glúteos y Zona Poplítea',
-    instructions: 'De pie, da un paso corto adelante apoyando el talón con la pierna extendida. Inclina el torso desde la cadera manteniendo la columna recta.',
+    instructions: 'De pie o tumbado boca arriba, extiende la pierna suavemente y lleva el muslo hacia ti manteniendo la columna recta y la rodilla relajada.',
     cortexTip: 'Mantén la rodilla con un micro-bloqueo suave sin hiperextender. Siente la tensión elástica en el centro del muslo posterior.',
     emoji: '🦵',
     robotImageKey: '1511',
@@ -73,14 +73,14 @@ const RECOVERY_STATIONS: RecoveryStation[] = [
     robotImageKey: '1494',
   },
   {
-    id: '0613',
-    name: 'Elongación Lateral de Cuádriceps',
+    id: '1424',
+    name: 'Elongación Piriforme & Glúteos Sentado',
     durationSeconds: 45,
-    muscles: 'Cuádriceps, Recto Femoral y Psoas',
-    instructions: 'Tumbado de lado, flexiona la pierna superior y sujeta el empeine o tobillo, acercando el talón hacia los glúteos sin arquear la espalda baja.',
-    cortexTip: 'Mantén ambas rodillas juntas y alineadas para evitar torsiones lesivas en los ligamentos colaterales de la rodilla.',
+    muscles: 'Glúteo Mayor, Piriforme y Rotadores de Cadera',
+    instructions: 'Siéntate en el suelo con manos apoyadas atrás, cruza un tobillo sobre el muslo opuesto y acerca el pecho hacia la pierna cruzada manteniendo la espalda recta.',
+    cortexTip: 'Descomprime el nervio ciático y libera la tensión de la pelvis posterior sin generar cizallamiento en la rodilla.',
     emoji: '🤸‍♂️',
-    robotImageKey: '0613',
+    robotImageKey: '1424',
   },
   {
     id: '1403',

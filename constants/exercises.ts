@@ -126,9 +126,9 @@ export const ALIAS_MAP: Record<string, string> = {
   air_bike: '0003', // air bike (bicicleta abdominal cruzada)
 
   // Protocolos de Recuperación, Flexibilidad y Descompresión
-  stretch_chest: '1271', // chest and front of shoulder stretch (descompresión pectoral y deltoides)
-  chest_decompression: '1271',
-  chest_stretch: '1271',
+  stretch_chest: '1167', // dynamic chest stretch (apertura y descompresión de pecho y hombros)
+  chest_decompression: '1167',
+  chest_stretch: '1167',
   stretch_lats: '1346', // kneeling lat stretch (estiramiento de dorsales y columna en rodillas)
   lat_stretch: '1346',
   kneeling_lat_stretch: '1346',
@@ -137,13 +137,13 @@ export const ALIAS_MAP: Record<string, string> = {
   spine_stretch: '1363',
   stretch_hamstring: '1511', // hamstring stretch (estiramiento de isquiotibiales)
   hamstring_stretch: '1511',
-  stretch_glutes: '1424', // seated glute stretch (estiramiento de glúteos sentado)
+  stretch_glutes: '1424', // seated glute stretch (estiramiento piriforme y glúteos sentado)
   glute_stretch: '1424',
   stretch_butterfly: '1494', // butterfly yoga pose (postura de mariposa y apertura pélvica)
   butterfly_stretch: '1494',
   butterfly_yoga: '1494',
-  stretch_quads: '0613', // lying (side) quads stretch (estiramiento lateral de cuádriceps)
-  quad_stretch: '0613',
+  stretch_quads: '1512', // all fours squad stretch (movilidad articular de cuádriceps y cadera)
+  quad_stretch: '1512',
   stretch_neck: '1403', // neck side stretch (descompresión cervical y trapecios)
   neck_stretch: '1403',
   stretch_triceps: '0817', // triceps stretch (estiramiento de tríceps)
@@ -386,7 +386,7 @@ export function resolveExerciseGuide(queryOrKey: string): ExerciseGuide {
     ) {
       return buildGuideFromDataset(EXERCISES_BY_ID.get('1494') || DEFAULT_FALLBACK_EXERCISE);
     }
-    return buildGuideFromDataset(EXERCISES_BY_ID.get('1271') || DEFAULT_FALLBACK_EXERCISE);
+    return buildGuideFromDataset(EXERCISES_BY_ID.get('1167') || DEFAULT_FALLBACK_EXERCISE);
   }
 
   if (
@@ -439,14 +439,19 @@ function buildGuideFromDataset(item: DatasetExercise): ExerciseGuide {
     ? 'Apto para articulaciones y sobrepeso: Cero cizallamiento en ligamento patelar.'
     : 'Alto impacto articular: Requiere buena masa muscular y técnica para amortiguar.';
 
+  const rawThumb = (item.thumbnailUrl || '').replace(
+    'https://cdn.jsdelivr.net/gh/hasaneyldrm/exercises-dataset@main',
+    'https://raw.githubusercontent.com/hasaneyldrm/exercises-dataset/main'
+  );
+
   return {
     id: item.id,
     name: formatExerciseTitle(item.name),
     imageKey: item.id,
-    gifUrl: item.cdnGifUrl,
+    gifUrl: item.rawGifUrl || item.cdnGifUrl,
     cdnGifUrl: item.cdnGifUrl,
     rawGifUrl: item.rawGifUrl,
-    thumbnailUrl: item.thumbnailUrl,
+    thumbnailUrl: rawThumb,
     muscles,
     sets: item.baseSets || 3,
     reps: item.baseReps || '10 - 12 reps lentas',

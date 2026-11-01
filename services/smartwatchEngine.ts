@@ -115,12 +115,12 @@ export class SmartwatchEngine {
             muscles: ['Dorsales', 'Espalda Media', 'Columna'],
           },
           {
-            id: '1271',
+            id: '1167',
             name: 'Descompresión de Pectorales & Hombros',
             reps: '45 segundos de apertura torácica',
             sets: 2,
             targetCount: 45,
-            imageKey: '1271',
+            imageKey: '1167',
             muscles: ['Pectorales', 'Deltoides Anterior', 'Hombros'],
           },
           {

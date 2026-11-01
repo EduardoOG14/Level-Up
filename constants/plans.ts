@@ -1025,11 +1025,11 @@ export function getPlanDayCircuit(
   } else if (day.isRestDay) {
     selectedCircuit = [
       {
-        id: '1271',
+        id: '1167',
         name: 'Descompresión de Pectorales & Hombros',
         targetCount: 45,
         repsLabel: '45s de apertura torácica',
-        imageKey: '1271',
+        imageKey: '1167',
         muscles: ['Pectorales', 'Hombros', 'Trapecios'],
         sets: 2,
         restTimeSeconds: 30,

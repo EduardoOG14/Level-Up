@@ -20,11 +20,25 @@ export function ExerciseMedia({
 }: ExerciseMediaProps) {
   const [loading, setLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
-  const [currentUri, setCurrentUri] = useState<string | undefined>(gifUrl || rawGifUrl);
+  // Priorizar el raw directo de GitHub para evitar bloqueos por cuota de 50MB en jsDelivr
+  const initialUri = rawGifUrl || gifUrl;
+  const [currentUri, setCurrentUri] = useState<string | undefined>(initialUri);
+
+  // Sanitizar el thumbnail para asegurar que use raw.githubusercontent.com y no falle con 403
+  const safeThumbnailUrl = thumbnailUrl
+    ? thumbnailUrl.replace(
+        'https://cdn.jsdelivr.net/gh/hasaneyldrm/exercises-dataset@main',
+        'https://raw.githubusercontent.com/hasaneyldrm/exercises-dataset/main'
+      )
+    : undefined;
 
   const handleError = () => {
-    // Si falla el CDN principal de jsDelivr, intentar el raw de GitHub
-    if (currentUri === gifUrl && rawGifUrl && gifUrl !== rawGifUrl) {
+    // Si falla uno, intentar la alternativa
+    if (currentUri === rawGifUrl && gifUrl && gifUrl !== rawGifUrl) {
+      setCurrentUri(gifUrl);
+      setHasError(false);
+      setLoading(true);
+    } else if (currentUri === gifUrl && rawGifUrl && gifUrl !== rawGifUrl) {
       setCurrentUri(rawGifUrl);
       setHasError(false);
       setLoading(true);
@@ -47,7 +61,7 @@ export function ExerciseMedia({
     <View style={[styles.container, style]}>
       <ExpoImage
         source={{ uri: currentUri }}
-        placeholder={thumbnailUrl ? { uri: thumbnailUrl } : undefined}
+        placeholder={safeThumbnailUrl ? { uri: safeThumbnailUrl } : undefined}
         style={StyleSheet.absoluteFill}
         contentFit={resizeMode}
         cachePolicy="disk"
