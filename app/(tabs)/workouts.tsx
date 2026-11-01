@@ -23,6 +23,7 @@ import { TRAINING_PLANS, type PlanType, type TrainingPlan } from '../../constant
 import { PlanAlarmModal } from '../../components/plans/PlanAlarmModal';
 import { PlanCircuitModal, type CustomCircuitData } from '../../components/plans/PlanCircuitModal';
 import { PlanCompletedModal } from '../../components/plans/PlanCompletedModal';
+import { RestAdvisoryModal } from '../../components/plans/RestAdvisoryModal';
 import { StreakEngine, getLocalDateKey } from '../../services/streakEngine';
 import {
   resolveExerciseGuide,
@@ -99,6 +100,9 @@ export default function WorkoutsScreen() {
   const mainScrollRef = useRef<any>(null);
   const [showPlanCompletedModal, setShowPlanCompletedModal] = useState(false);
   const [completedModalPlan, setCompletedModalPlan] = useState<TrainingPlan | null>(null);
+  const [showRestAdvisoryModal, setShowRestAdvisoryModal] = useState(false);
+  const [pendingRestDayNumber, setPendingRestDayNumber] = useState<number>(1);
+  const [pendingRestPlan, setPendingRestPlan] = useState<TrainingPlan | null>(null);
 
   const [activeTab, setActiveTab] = useState<'plans' | 'custom' | 'arsenal'>('plans');
   const [selectedPlanCategory, setSelectedPlanCategory] = useState<PlanType | 'all'>('all');
@@ -394,7 +398,19 @@ export default function WorkoutsScreen() {
 
   const handleSelectPlan = async (plan: TrainingPlan) => {
     await setActivePlan(plan.id);
-    Alert.alert('Plan Activado ⚡', `Has seleccionado "${plan.title}". CORTEX coordinará tu telemetría y alarmas.`);
+    const isRoutineDoneToday = usePlanStore.getState().isTodayRoutineCompleted();
+
+    if (isRoutineDoneToday) {
+      // El usuario ya entrenó hoy y activó otro plan
+      setPendingRestPlan(plan);
+      setPendingRestDayNumber(1);
+      setShowRestAdvisoryModal(true);
+    } else {
+      Alert.alert(
+        'Plan Activado ⚡',
+        `Has seleccionado "${plan.title}". CORTEX coordinará tu telemetría y alarmas.`
+      );
+    }
   };
 
   const handleToggleDayComplete = async (dayNumber: number, xpReward: number) => {
@@ -426,10 +442,35 @@ export default function WorkoutsScreen() {
     ? completedDayNumbers.includes(nextPendingDay.dayNumber)
     : false;
 
-  const handleOpenCircuit = (dayNum?: number) => {
+  const handleOpenCircuit = (dayNum?: number, forceStart?: boolean) => {
     const targetDay = dayNum ?? (nextPendingDay?.dayNumber || 1);
+    const isDayAlreadyDone = completedDayNumbers.includes(targetDay);
+    const isRoutineDoneToday = usePlanStore.getState().isTodayRoutineCompleted();
+
+    // Si ya completó una rutina hoy y este circuito aún no está completado,
+    // advertir sobre la importancia del descanso fisiológico salvo que el usuario fuerce el inicio
+    if (!forceStart && isRoutineDoneToday && !isDayAlreadyDone) {
+      setPendingRestDayNumber(targetDay);
+      setPendingRestPlan(activePlan || null);
+      setShowRestAdvisoryModal(true);
+      return;
+    }
+
     setCircuitDayNumber(targetDay);
     setShowCircuitModal(true);
+  };
+
+  const handleStartTomorrow = () => {
+    setShowRestAdvisoryModal(false);
+    Alert.alert(
+      'Descanso y Asimilación 🛡️',
+      `Sabia decisión. Tu cuerpo asimilará el estímulo de hoy y mañana tendrás la energía al 100% para iniciar el Día ${pendingRestDayNumber} de "${pendingRestPlan?.title || activePlan?.title}".`
+    );
+  };
+
+  const handleStartAnyway = () => {
+    setShowRestAdvisoryModal(false);
+    handleOpenCircuit(pendingRestDayNumber, true);
   };
 
   const cyanGlow = pulseAnim.interpolate({
@@ -1530,6 +1571,22 @@ export default function WorkoutsScreen() {
           await resetCurrentPlanProgress();
           Alert.alert('Ciclo Reiniciado 🔄', `Puedes volver a realizar los días de este plan.`);
         }}
+      />
+
+      {/* Modal de Advertencia Biomédica: Importancia del Descanso */}
+      <RestAdvisoryModal
+        visible={showRestAdvisoryModal}
+        planTitle={pendingRestPlan?.title || activePlan?.title}
+        planEmoji={pendingRestPlan?.emoji || activePlan?.emoji}
+        dayNumber={pendingRestDayNumber}
+        sessionTitle={
+          pendingRestPlan?.daysSchedule?.find((d) => d.dayNumber === pendingRestDayNumber)?.title ||
+          activePlan?.daysSchedule?.find((d) => d.dayNumber === pendingRestDayNumber)?.title ||
+          'Circuito Táctico'
+        }
+        onStartTomorrow={handleStartTomorrow}
+        onStartAnyway={handleStartAnyway}
+        onClose={() => setShowRestAdvisoryModal(false)}
       />
 
       {/* Modal Táctico para Explorar Ejercicio del Arsenal */}
