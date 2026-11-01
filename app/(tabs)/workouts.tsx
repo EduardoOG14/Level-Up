@@ -22,6 +22,8 @@ import { Colors, Fonts, Spacing, Radius } from '../../constants/theme';
 import { TRAINING_PLANS, type PlanType, type TrainingPlan } from '../../constants/plans';
 import { PlanAlarmModal } from '../../components/plans/PlanAlarmModal';
 import { PlanCircuitModal, type CustomCircuitData } from '../../components/plans/PlanCircuitModal';
+import { PlanCompletedModal } from '../../components/plans/PlanCompletedModal';
+import { StreakEngine, getLocalDateKey } from '../../services/streakEngine';
 import {
   resolveExerciseGuide,
   validateAndAdaptCircuit,
@@ -89,7 +91,14 @@ export default function WorkoutsScreen() {
     completePlanDay,
     alarmSettings,
     getActivePlan,
+    isCurrentPlanCompleted,
+    getRecommendedNextPlan,
+    resetCurrentPlanProgress,
   } = usePlanStore();
+
+  const mainScrollRef = useRef<any>(null);
+  const [showPlanCompletedModal, setShowPlanCompletedModal] = useState(false);
+  const [completedModalPlan, setCompletedModalPlan] = useState<TrainingPlan | null>(null);
 
   const [activeTab, setActiveTab] = useState<'plans' | 'custom' | 'arsenal'>('plans');
   const [selectedPlanCategory, setSelectedPlanCategory] = useState<PlanType | 'all'>('all');
@@ -390,8 +399,13 @@ export default function WorkoutsScreen() {
 
   const handleToggleDayComplete = async (dayNumber: number, xpReward: number) => {
     if (completedDayNumbers.includes(dayNumber)) return;
-    await completePlanDay(dayNumber);
-    Alert.alert('¡Día Conquistado! ⚔️', `Sumaste +${xpReward} XP a tu progreso.`);
+    const res = await completePlanDay(dayNumber);
+    if (res.isPlanFullyCompleted && activePlan) {
+      setCompletedModalPlan(activePlan);
+      setShowPlanCompletedModal(true);
+    } else {
+      Alert.alert('¡Día Conquistado! ⚔️', `Sumaste +${xpReward} XP a tu progreso.`);
+    }
   };
 
   const filteredPlans =
@@ -496,7 +510,7 @@ export default function WorkoutsScreen() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
+      <ScrollView ref={mainScrollRef} contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
         {/* Banner de Calibración Smartwatch */}
         {isWatchConnected && watchBrandConfig && (
           <View style={[styles.smartwatchWorkoutBanner, { borderColor: watchBrandConfig.accentColor + '55' }]}>
@@ -531,8 +545,82 @@ export default function WorkoutsScreen() {
         {/* ================= PESTAÑA 1: PLANES CORTEX ================= */}
         {activeTab === 'plans' && (
           <>
-            {/* Tarjeta Hero: Plan Activo (Estética idéntica a Misiones Diarias) */}
+            {/* Tarjeta Hero: Plan Activo o Plan Conquistado */}
             {activePlan ? (
+              isCurrentPlanCompleted() ? (
+                <View style={styles.conqueredPlanCard}>
+                  {/* Header Conquistado */}
+                  <View style={styles.conqueredHeaderRow}>
+                    <View style={styles.conqueredTrophyBox}>
+                      <Ionicons name="trophy" size={24} color="#F59E0B" />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                        <View style={styles.conqueredPill}>
+                          <Text style={styles.conqueredPillText}>PROGRAMA CONQUISTADO (100%)</Text>
+                        </View>
+                        <Text style={styles.conqueredDaysCount}>
+                          {completedDayNumbers.length}/{activePlan.daysSchedule.length} DÍAS
+                        </Text>
+                      </View>
+                      <Text style={styles.activePlanTitle}>{activePlan.emoji} {activePlan.title}</Text>
+                    </View>
+                  </View>
+
+                  <Text style={styles.conqueredDesc}>
+                    ¡Enhorabuena, Cazador! Has completado todos los ciclos de este plan táctico. Tu disciplina física y neuromuscular han evolucionado. CORTEX te recomienda seleccionar tu siguiente programa de entrenamiento para continuar tu ascenso.
+                  </Text>
+
+                  {/* Recomendación CORTEX del siguiente nivel */}
+                  {getRecommendedNextPlan() && getRecommendedNextPlan()?.id !== activePlan.id && (
+                    <View style={styles.cortexNextPlanBox}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        <Ionicons name="compass" size={14} color="#10B981" />
+                        <Text style={styles.cortexNextPlanLabel}>SIGUIENTE NIVEL RECOMENDADO:</Text>
+                      </View>
+                      <Text style={styles.cortexNextPlanTitle}>
+                        {getRecommendedNextPlan()?.emoji} {getRecommendedNextPlan()?.title} • {getRecommendedNextPlan()?.difficulty}
+                      </Text>
+                      <TouchableOpacity
+                        style={styles.selectNewPlanBtn}
+                        onPress={() => handleSelectPlan(getRecommendedNextPlan()!)}
+                        activeOpacity={0.85}
+                      >
+                        <Ionicons name="play" size={15} color="#0A0A0F" />
+                        <Text style={styles.selectNewPlanBtnText}>
+                          Comenzar Siguiente Programa ›
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
+
+                  {/* Acciones del Plan Conquistado */}
+                  <View style={styles.conqueredActionsRow}>
+                    <TouchableOpacity
+                      style={styles.browseCatalogBtn}
+                      onPress={() => {
+                        mainScrollRef.current?.scrollTo({ y: 380, animated: true });
+                      }}
+                      activeOpacity={0.8}
+                    >
+                      <Ionicons name="list" size={16} color="#00F0FF" />
+                      <Text style={styles.browseCatalogBtnText}>Ver Catálogo de Planes</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={styles.repeatCycleBtn}
+                      onPress={async () => {
+                        await resetCurrentPlanProgress();
+                        Alert.alert('Ciclo Reiniciado 🔄', `Puedes volver a realizar los días de "${activePlan.title}".`);
+                      }}
+                      activeOpacity={0.75}
+                    >
+                      <Ionicons name="refresh" size={15} color="#94A3B8" />
+                      <Text style={styles.repeatCycleBtnText}>Repetir Ciclo</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ) : (
               <Animated.View style={[styles.activePlanCard, { borderColor: cyanGlow }]}>
                 {/* Header de la Tarjeta del Plan */}
                 <View style={styles.activePlanTopRow}>
@@ -740,6 +828,7 @@ export default function WorkoutsScreen() {
                   </View>
                 )}
               </Animated.View>
+              )
             ) : (
               <View style={styles.noPlanCard}>
                 <View style={styles.noPlanIconBox}>
@@ -1430,6 +1519,19 @@ export default function WorkoutsScreen() {
         onClose={() => setShowKeyModal(false)}
       />
 
+      {/* Modal de Celebración de Plan Conquistado al 100% */}
+      <PlanCompletedModal
+        visible={showPlanCompletedModal}
+        plan={completedModalPlan}
+        recommendedNextPlan={getRecommendedNextPlan()}
+        onClose={() => setShowPlanCompletedModal(false)}
+        onSelectPlan={(newPlan) => handleSelectPlan(newPlan)}
+        onRepeatPlan={async () => {
+          await resetCurrentPlanProgress();
+          Alert.alert('Ciclo Reiniciado 🔄', `Puedes volver a realizar los días de este plan.`);
+        }}
+      />
+
       {/* Modal Táctico para Explorar Ejercicio del Arsenal */}
       {selectedCatalogExercise && (
         <QuestDetailModal
@@ -1562,6 +1664,126 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 36,
     gap: 16,
+  },
+
+  // Plan Conquistado (100% Completado)
+  conqueredPlanCard: {
+    backgroundColor: '#0F121E',
+    borderRadius: 20,
+    padding: 16,
+    borderWidth: 1.5,
+    borderColor: '#F59E0B',
+    gap: 12,
+  },
+  conqueredHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  conqueredTrophyBox: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(245, 158, 11, 0.15)',
+    borderWidth: 1.5,
+    borderColor: '#F59E0B',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  conqueredPill: {
+    backgroundColor: 'rgba(245, 158, 11, 0.15)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(245, 158, 11, 0.4)',
+  },
+  conqueredPillText: {
+    color: '#F59E0B',
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.8,
+  },
+  conqueredDaysCount: {
+    color: '#00F0FF',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  conqueredDesc: {
+    color: '#94A3B8',
+    fontSize: 12,
+    lineHeight: 18,
+  },
+  cortexNextPlanBox: {
+    backgroundColor: 'rgba(16, 185, 129, 0.08)',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(16, 185, 129, 0.3)',
+    padding: 12,
+    gap: 6,
+  },
+  cortexNextPlanLabel: {
+    color: '#10B981',
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.8,
+  },
+  cortexNextPlanTitle: {
+    color: '#F8FAFC',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  selectNewPlanBtn: {
+    backgroundColor: '#10B981',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    borderRadius: 10,
+    marginTop: 4,
+  },
+  selectNewPlanBtnText: {
+    color: '#0A0A0F',
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  conqueredActionsRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 2,
+  },
+  browseCatalogBtn: {
+    flex: 1.2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    backgroundColor: 'rgba(0, 240, 255, 0.1)',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 240, 255, 0.3)',
+  },
+  browseCatalogBtnText: {
+    color: '#00F0FF',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  repeatCycleBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
+    paddingVertical: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderRadius: 10,
+  },
+  repeatCycleBtnText: {
+    color: '#94A3B8',
+    fontSize: 11,
+    fontWeight: '600',
   },
 
   // Plan Activo (Estética idéntica a Misiones Diarias)

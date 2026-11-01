@@ -17,12 +17,14 @@ interface DailyCompletionModalProps {
   visible: boolean;
   onClose: () => void;
   bonusXP?: number;
+  isRoutineCompleted?: boolean;
 }
 
 export function DailyCompletionModal({
   visible,
   onClose,
   bonusXP = 300,
+  isRoutineCompleted = false,
 }: DailyCompletionModalProps) {
   const scaleAnim = useRef(new Animated.Value(0.7)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
@@ -58,16 +60,18 @@ export function DailyCompletionModal({
       pulseLoop.start();
 
       // Locución humana y entusiasta de felicitaciones
-      CortexVoice.speak(
-        '¡Felicidades, Cazador! Has completado todas las misiones de hoy con excelencia táctica. Has recibido un bono especial de trescientos puntos de experiencia del Sistema.'
-      );
+      const speech = isRoutineCompleted
+        ? '¡Felicidades, Cazador! Has completado todas las misiones y tu rutina del día. Tu racha de combate ha sido protegida y avanzada con éxito.'
+        : '¡Felicidades, Cazador! Has completado las cinco misiones de hoy con excelencia táctica. Recuerda completar también tu rutina de entrenamiento para blindar y avanzar tu racha.';
+
+      CortexVoice.speak(speech);
 
       return () => {
         pulseLoop.stop();
         CortexVoice.stop();
       };
     }
-  }, [visible]);
+  }, [visible, isRoutineCompleted]);
 
   if (!visible) return null;
 
@@ -133,12 +137,34 @@ export function DailyCompletionModal({
             <View style={styles.divider} />
 
             <View style={styles.rewardRow}>
-              <View style={[styles.rewardIconBg, { backgroundColor: 'rgba(16, 185, 129, 0.15)' }]}>
-                <Ionicons name="shield-checkmark" size={20} color="#10B981" />
+              <View
+                style={[
+                  styles.rewardIconBg,
+                  {
+                    backgroundColor: isRoutineCompleted
+                      ? 'rgba(16, 185, 129, 0.15)'
+                      : 'rgba(245, 158, 11, 0.15)',
+                  },
+                ]}
+              >
+                <Ionicons
+                  name={isRoutineCompleted ? 'shield-checkmark' : 'hourglass-outline'}
+                  size={20}
+                  color={isRoutineCompleted ? '#10B981' : '#F59E0B'}
+                />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.rewardLabel}>ESTADO DE RACHA</Text>
-                <Text style={[styles.rewardValue, { color: '#10B981' }]}>Racha de Combate Protegida 🔥</Text>
+                <Text
+                  style={[
+                    styles.rewardValue,
+                    { color: isRoutineCompleted ? '#10B981' : '#F59E0B' },
+                  ]}
+                >
+                  {isRoutineCompleted
+                    ? 'Racha de Combate Blindada 🔥'
+                    : 'Falta Rutina para Asegurar Racha ⏳'}
+                </Text>
               </View>
             </View>
           </View>

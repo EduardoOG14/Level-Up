@@ -12,9 +12,12 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useUserStore } from '../../stores/userStore';
+import { usePlanStore } from '../../stores/planStore';
+import { StreakEngine, type DailyStreakStatus } from '../../services/streakEngine';
+import { StreakStatusCard } from '../../components/gamification/StreakStatusCard';
 import { RankBadge } from '../../components/ui/RankBadge';
 import { type Quest } from '../../components/gamification/QuestCard';
 import { QuestDetailModal } from '../../components/gamification/QuestDetailModal';
@@ -174,6 +177,7 @@ export const DEFAULT_FIVE_QUESTS: Quest[] = [
 
 export default function HomeScreen() {
   const { user, addXP, updateStreak, updateProfile, isLoading } = useUserStore();
+  const { isCurrentPlanCompleted, getActivePlan } = usePlanStore();
   const router = useRouter();
   const [quests, setQuests] = useState<Quest[]>([]);
   const [selectedQuest, setSelectedQuest] = useState<Quest | null>(null);
@@ -185,8 +189,21 @@ export default function HomeScreen() {
   const [showSmartwatchModal, setShowSmartwatchModal] = useState(false);
   const [showAdaptedCircuitModal, setShowAdaptedCircuitModal] = useState(false);
   const [smartwatchCircuitData, setSmartwatchCircuitData] = useState<CustomCircuitData | null>(null);
+  const [streakStatus, setStreakStatus] = useState<DailyStreakStatus | null>(null);
   const [cortexTip, setCortexTip] = useState<string>(
     'Controla la cadencia excéntrica en cada repetición para potenciar la hipertrofia y la fortaleza neural. ⚡'
+  );
+
+  const refreshStreakStatus = useCallback(async () => {
+    if (!user?.uid) return;
+    const status = await StreakEngine.getDailyStatus(user.uid);
+    setStreakStatus(status);
+  }, [user?.uid]);
+
+  useFocusEffect(
+    useCallback(() => {
+      refreshStreakStatus();
+    }, [refreshStreakStatus])
   );
 
   // Pulso continuo del Sistema Solo Leveling
@@ -490,15 +507,17 @@ export default function HomeScreen() {
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     await loadQuests();
+    await refreshStreakStatus();
     setRefreshing(false);
-  }, [user?.uid]);
+  }, [user?.uid, refreshStreakStatus]);
 
   useEffect(() => {
-    if (user) {
-      updateStreak();
+    if (user?.uid) {
+      StreakEngine.validateStreakOnAppLaunch(user.uid);
+      refreshStreakStatus();
       loadQuests();
     }
-  }, [user?.uid]);
+  }, [user?.uid, refreshStreakStatus]);
 
   // Alternar estado de una misión (marcar / desmarcar) con ajuste dinámico de EXP
   const handleToggleQuest = async (questId: string) => {
@@ -536,6 +555,9 @@ export default function HomeScreen() {
 
       if (allCompleted) {
         await recordDailyQuestsCompleted(user.uid);
+        await StreakEngine.recordQuestsCompleted(user.uid);
+        await refreshStreakStatus();
+
         if (isPenaltyActive) {
           await resolvePenalty(user.uid);
         }
@@ -548,6 +570,8 @@ export default function HomeScreen() {
           Haptics.triumph();
           setShowCompletionModal(true);
         }
+      } else {
+        await refreshStreakStatus();
       }
     } else {
       // --- DESMARCAR MISIÓN (-EXP) ---
@@ -562,6 +586,7 @@ export default function HomeScreen() {
       await addXP(-quest.xpReward, quest.statBoost?.stat as any);
       await updateProfile({ questsCompleted: Math.max(0, (user.questsCompleted || 1) - 1) });
       Haptics.light();
+      await refreshStreakStatus();
     }
   };
 
@@ -593,8 +618,14 @@ export default function HomeScreen() {
 
   const handleCompleteAdaptedCircuit = async (_dayNumber: number, xpReward: number) => {
     setShowAdaptedCircuitModal(false);
-    if (xpReward > 0) {
+    if (xpReward > 0 && user?.uid) {
       await addXP(xpReward, 'vitality');
+      await StreakEngine.recordRoutineCompleted(
+        user.uid,
+        adaptiveWorkout?.title || 'Circuito Bio-Nexo Adaptativo',
+        xpReward
+      );
+      await refreshStreakStatus();
       SoundEffects.playLevelUp();
       Haptics.triumph();
     }
@@ -844,7 +875,40 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* 5. PROTOCOLO DE MISIONES DIARIAS */}
+        {/* 5. PACTO DE RACHA: ESTADO RIGUROSO (MISIONES + RUTINA) */}
+        <StreakStatusCard
+          streak={user.streak}
+          questsCompletedCount={completedCount}
+          totalQuests={5}
+          areQuestsCompleted={allQuestsCompleted}
+          isRoutineCompleted={streakStatus?.isRoutineCompleted ?? false}
+          routineTitle={streakStatus?.completedRoutineTitle}
+          isPenaltyActive={isPenaltyActive}
+          onPressQuests={() => {}}
+          onPressRoutine={() => router.push('/(tabs)/workouts')}
+        />
+
+        {/* Banner de Aviso: Plan Conquistado al 100% */}
+        {isCurrentPlanCompleted() && (
+          <TouchableOpacity
+            style={styles.completedPlanNotice}
+            onPress={() => router.push('/(tabs)/workouts')}
+            activeOpacity={0.8}
+          >
+            <View style={styles.completedPlanNoticeIcon}>
+              <Ionicons name="trophy" size={20} color="#F59E0B" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.completedPlanNoticeTitle}>¡PROGRAMA ACTUAL CONQUISTADO! 🏆</Text>
+              <Text style={styles.completedPlanNoticeSubtitle}>
+                Has finalizado "{getActivePlan()?.title}". Toca para seleccionar tu nuevo programa en Entrenamiento.
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color="#F59E0B" />
+          </TouchableOpacity>
+        )}
+
+        {/* 6. PROTOCOLO DE MISIONES DIARIAS */}
         <Animated.View style={[styles.questsCard, { borderColor: borderPulse }]}>
           <View style={styles.questsHeader}>
             <View style={styles.questsTitleWrapper}>
@@ -1015,6 +1079,7 @@ export default function HomeScreen() {
         visible={showCompletionModal}
         onClose={() => setShowCompletionModal(false)}
         bonusXP={300}
+        isRoutineCompleted={streakStatus?.isRoutineCompleted ?? false}
       />
 
       {/* Modal de Calibración de Peso Semanal */}
@@ -1247,6 +1312,39 @@ const styles = StyleSheet.create({
     color: '#E2E8F0',
     fontSize: 12.5,
     lineHeight: 18,
+  },
+
+  // AVISO DE PLAN CONQUISTADO
+  completedPlanNotice: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(245, 158, 11, 0.08)',
+    borderRadius: Radius.lg,
+    borderWidth: 1.5,
+    borderColor: 'rgba(245, 158, 11, 0.4)',
+    padding: Spacing.md,
+    gap: 12,
+    marginBottom: Spacing.md,
+  },
+  completedPlanNoticeIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: 'rgba(245, 158, 11, 0.18)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  completedPlanNoticeTitle: {
+    color: '#F59E0B',
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 0.6,
+  },
+  completedPlanNoticeSubtitle: {
+    color: '#94A3B8',
+    fontSize: 11,
+    marginTop: 2,
+    lineHeight: 15,
   },
 
   // 3. CORTEX PROTOCOLO TÁCTICO (EXPANDIDO Y COMPLETO)
