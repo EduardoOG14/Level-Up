@@ -50,6 +50,8 @@ import { CortexKeyModal } from '../../components/ai/CortexKeyModal';
 import { useCortexEnergyStore } from '../../stores/cortexEnergyStore';
 import { useUpdateStore } from '../../stores/updateStore';
 import { getCurrentAppVersion } from '../../services/updateService';
+import { BossTowerModal } from '../../components/profile/BossTowerModal';
+import { useBossStore } from '../../stores/bossStore';
 export { PRESET_AVATARS, renderAvatarContent };
 
 const GOALS_MAP: Record<string, string> = {
@@ -91,6 +93,8 @@ export default function ProfileScreen() {
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const { unlockedIds, isAllCompleted } = useAchievementStore();
   const { currentTitle } = useTitleStore();
+  const { defeatedBossIds, getActiveBoss, initialize: initBossStore } = useBossStore();
+  const [showBossTowerModal, setShowBossTowerModal] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(SoundEffects.getIsEnabled());
   const [showSmartwatchModal, setShowSmartwatchModal] = useState(false);
   const [showCortexKeyModal, setShowCortexKeyModal] = useState(false);
@@ -112,6 +116,9 @@ export default function ProfileScreen() {
 
   useEffect(() => {
     initEnergy();
+    if (user?.uid) {
+      initBossStore(user.uid);
+    }
     const loop = Animated.loop(
       Animated.sequence([
         Animated.timing(pulseAnim, {
@@ -467,8 +474,68 @@ export default function ProfileScreen() {
                 Logros ({unlockedIds.length}/52)
               </Text>
             </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.heroActionBtn, styles.heroActionBtnPurple]}
+              onPress={() => setShowBossTowerModal(true)}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="shield-half" size={15} color="#C084FC" />
+              <Text style={[styles.heroActionBtnText, { color: '#C084FC' }]}>
+                Torre ({defeatedBossIds.length}/22)
+              </Text>
+            </TouchableOpacity>
           </View>
         </View>
+
+        {/* TARJETA DESTACADA: LA TORRE DE LOS 22 MONARCAS */}
+        <TouchableOpacity
+          style={styles.bossTowerBannerCard}
+          onPress={() => setShowBossTowerModal(true)}
+          activeOpacity={0.85}
+        >
+          <View style={styles.bossTowerHeaderRow}>
+            <View style={styles.bossTowerTitleRow}>
+              <View style={styles.bossTowerIconBox}>
+                <Ionicons name="shield" size={16} color="#A855F7" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <View style={styles.bossTowerTitleBadgeRow}>
+                  <Text style={styles.bossTowerTitle}>[ LA TORRE DE JEFES ]</Text>
+                  <View style={styles.bossTowerFloorTag}>
+                    <Text style={styles.bossTowerFloorTagText}>
+                      {defeatedBossIds.length}/22 PISOS
+                    </Text>
+                  </View>
+                </View>
+                <Text style={styles.bossTowerSubtitle}>
+                  {defeatedBossIds.length >= 22
+                    ? '👑 Cúspide Conquistada • Monarcas Sometidos'
+                    : `Objetivo Actual: Escalón ${defeatedBossIds.length + 1} (${getActiveBoss().name.split(',')[0]})`}
+                </Text>
+              </View>
+            </View>
+            <View style={styles.bossTowerChevronBox}>
+              <Ionicons name="chevron-forward" size={18} color="#C084FC" />
+            </View>
+          </View>
+
+          {/* Barra de progreso de la Torre */}
+          <View style={styles.bossTowerProgressTrack}>
+            <View
+              style={[
+                styles.bossTowerProgressFill,
+                { width: `${Math.max(5, Math.round((defeatedBossIds.length / 22) * 100))}%` },
+              ]}
+            />
+          </View>
+          <View style={styles.bossTowerFooterRow}>
+            <Text style={styles.bossTowerFooterText}>
+              💥 Registro de Rutinas y Fechas de Conquista
+            </Text>
+            <Text style={styles.bossTowerActionText}>VER SALÓN DE MONARCAS ›</Text>
+          </View>
+        </TouchableOpacity>
 
         {/* 2. LA ICÓNICA [ VENTANA DE ESTADO ] DE SOLO LEVELING */}
         <View style={styles.statusWindowCard}>
@@ -1255,6 +1322,13 @@ export default function ProfileScreen() {
         onClose={() => setShowAchievementsModal(false)}
       />
 
+      {/* Modal de La Torre de Jefes */}
+      <BossTowerModal
+        visible={showBossTowerModal}
+        onClose={() => setShowBossTowerModal(false)}
+        onNavigateToWorkouts={() => router.push('/workouts')}
+      />
+
       {/* Modal de Gestión y Sincronización Smartwatch */}
       <SmartwatchSyncModal
         visible={showSmartwatchModal}
@@ -1377,10 +1451,108 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(245, 158, 11, 0.12)',
     borderColor: 'rgba(245, 158, 11, 0.4)',
   },
+  heroActionBtnPurple: {
+    backgroundColor: 'rgba(168, 85, 247, 0.14)',
+    borderColor: 'rgba(168, 85, 247, 0.4)',
+  },
   heroActionBtnText: {
     color: '#00F0FF',
     fontSize: 12,
     fontWeight: 'bold',
+  },
+
+  // Tarjeta de la Torre de los 22 Monarcas
+  bossTowerBannerCard: {
+    backgroundColor: '#0D0E1A',
+    borderRadius: Radius.lg,
+    borderWidth: 1.5,
+    borderColor: 'rgba(168, 85, 247, 0.35)',
+    padding: Spacing.md,
+    gap: 10,
+    shadowColor: '#A855F7',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  bossTowerHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  bossTowerTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
+  },
+  bossTowerIconBox: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: 'rgba(168, 85, 247, 0.18)',
+    borderWidth: 1,
+    borderColor: 'rgba(168, 85, 247, 0.4)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  bossTowerTitleBadgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  bossTowerTitle: {
+    color: '#F8FAFC',
+    fontSize: 13.5,
+    fontWeight: 'bold',
+    letterSpacing: 0.5,
+  },
+  bossTowerFloorTag: {
+    backgroundColor: 'rgba(168, 85, 247, 0.25)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: Radius.sm,
+  },
+  bossTowerFloorTagText: {
+    color: '#C084FC',
+    fontSize: 9.5,
+    fontWeight: 'bold',
+  },
+  bossTowerSubtitle: {
+    color: Colors.text.secondary,
+    fontSize: 11,
+    marginTop: 2,
+  },
+  bossTowerChevronBox: {
+    marginLeft: 6,
+  },
+  bossTowerProgressTrack: {
+    width: '100%',
+    height: 5,
+    backgroundColor: '#161828',
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
+  bossTowerProgressFill: {
+    height: '100%',
+    backgroundColor: '#A855F7',
+    borderRadius: 3,
+  },
+  bossTowerFooterRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  bossTowerFooterText: {
+    color: '#94A3B8',
+    fontSize: 10,
+    fontWeight: '500',
+  },
+  bossTowerActionText: {
+    color: '#C084FC',
+    fontSize: 10,
+    fontWeight: 'bold',
+    letterSpacing: 0.5,
   },
 
   // Solo Leveling [ Ventana de Estado ]

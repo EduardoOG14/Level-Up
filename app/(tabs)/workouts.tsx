@@ -368,7 +368,22 @@ export default function WorkoutsScreen() {
     setDungeonCircuit(null);
 
     if (isBossRaid && user?.uid) {
-      const result = await recordBossDefeat(currentBoss.id, user.uid);
+      const routineSnapshot = (dungeonCircuit?.circuit || currentBoss.circuit).map((ex) => ({
+        id: ex.id,
+        name: ex.name,
+        targetCount: ex.targetCount,
+        repsLabel: ex.repsLabel,
+        muscles: ex.muscles,
+        sets: ex.sets,
+        xpReward: ex.xpReward,
+      }));
+
+      const result = await recordBossDefeat(
+        currentBoss.id,
+        user.uid,
+        routineSnapshot,
+        user?.level || 1
+      );
       Haptics.triumph();
       SoundEffects.playLevelUp();
 

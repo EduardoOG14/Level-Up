@@ -10,6 +10,9 @@ export interface WeeklyBoss {
   totalHP: number;
   xpReward: number;
   circuit: CircuitExercise[];
+  imageUrl?: string;
+  kanjiTitle?: string;
+  rankBadge?: string;
 }
 
 export const WEEKLY_BOSSES: WeeklyBoss[] = [
@@ -18,6 +21,9 @@ export const WEEKLY_BOSSES: WeeklyBoss[] = [
   // =========================================================================
   {
     id: 'boss_kasaka',
+    imageUrl: 'https://images.unsplash.com/photo-1531384370597-8590413be50a?w=600&auto=format&fit=crop&q=80',
+    kanjiTitle: '青毒の巨蛇',
+    rankBadge: 'RANGO D',
     name: 'Kasaka de Colmillos Azules',
     title: 'Gran Serpiente de la Mazmorra Subterránea',
     emoji: '🐍',
@@ -89,6 +95,9 @@ export const WEEKLY_BOSSES: WeeklyBoss[] = [
   // =========================================================================
   {
     id: 'boss_cerberus',
+    imageUrl: 'https://images.unsplash.com/photo-1546182990-dffeafbe841d?w=600&auto=format&fit=crop&q=80',
+    kanjiTitle: '地獄の門番',
+    rankBadge: 'RANGO D+',
     name: 'Cerbero, Guardián del Inframundo',
     title: 'Sabueso de Tres Cabezas del Castillo Demoníaco',
     emoji: '🐺',
@@ -160,6 +169,9 @@ export const WEEKLY_BOSSES: WeeklyBoss[] = [
   // =========================================================================
   {
     id: 'boss_centipede',
+    imageUrl: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=600&auto=format&fit=crop&q=80',
+    kanjiTitle: '毒沼の百足',
+    rankBadge: 'RANGO C-',
     name: 'Ciempiés Gigante del Pantano Venenoso',
     title: 'Terror Acorazado de las Profundidades Ácidas',
     emoji: '🦂',
@@ -231,6 +243,9 @@ export const WEEKLY_BOSSES: WeeklyBoss[] = [
   // =========================================================================
   {
     id: 'boss_igris',
+    imageUrl: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=600&auto=format&fit=crop&q=80',
+    kanjiTitle: '血赤の騎士',
+    rankBadge: 'RANGO C+',
     name: 'Igris, el Comandante Carmesí',
     title: 'Caballero de Élite de la Mazmorra Roja',
     emoji: '⚔️',
@@ -302,6 +317,9 @@ export const WEEKLY_BOSSES: WeeklyBoss[] = [
   // =========================================================================
   {
     id: 'boss_baruka',
+    imageUrl: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&auto=format&fit=crop&q=80',
+    kanjiTitle: '白霜の君主',
+    rankBadge: 'RANGO B-',
     name: 'Baruka, el Señor de la Escarcha',
     title: 'Monarca de los Elfos de Nieve',
     emoji: '❄️',
@@ -373,6 +391,9 @@ export const WEEKLY_BOSSES: WeeklyBoss[] = [
   // =========================================================================
   {
     id: 'boss_metus',
+    imageUrl: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=600&auto=format&fit=crop&q=80',
+    kanjiTitle: '死霊の魔導士',
+    rankBadge: 'RANGO B',
     name: 'Metus, el Nigromante del Abismo',
     title: 'Hechicero del Castillo Demoníaco Piso 75',
     emoji: '💀',
@@ -444,6 +465,9 @@ export const WEEKLY_BOSSES: WeeklyBoss[] = [
   // =========================================================================
   {
     id: 'boss_iron',
+    imageUrl: 'https://images.unsplash.com/photo-1563089145-599997674d42?w=600&auto=format&fit=crop&q=80',
+    kanjiTitle: '鋼鉄の戦士',
+    rankBadge: 'RANGO B+',
     name: 'Kim Chul de Hierro, el Guerrero Blindado',
     title: 'Guardián Sombra de la Puerta Blanca',
     emoji: '🛡️',
@@ -515,6 +539,9 @@ export const WEEKLY_BOSSES: WeeklyBoss[] = [
   // =========================================================================
   {
     id: 'boss_kargalgan',
+    imageUrl: 'https://images.unsplash.com/photo-1514539079130-25950c84af65?w=600&auto=format&fit=crop&q=80',
+    kanjiTitle: '大呪術師',
+    rankBadge: 'RANGO A-',
     name: 'Kargalgan, el Gran Hechicero Orco',
     title: 'Sumo Chamán de los Altos Orcos',
     emoji: '🧙‍♂️',
@@ -586,6 +613,9 @@ export const WEEKLY_BOSSES: WeeklyBoss[] = [
   // =========================================================================
   {
     id: 'boss_tusk',
+    imageUrl: 'https://images.unsplash.com/photo-1549465220-1a8b9238cd48?w=600&auto=format&fit=crop&q=80',
+    kanjiTitle: '紅蓮の巨像',
+    rankBadge: 'RANGO A',
     name: 'Tusk, el Coloso Alto Orco de Fuego',
     title: 'Mago Chamán de la Canción de Protección',
     emoji: '🦣',
@@ -657,6 +687,9 @@ export const WEEKLY_BOSSES: WeeklyBoss[] = [
   // =========================================================================
   {
     id: 'boss_vulcan',
+    imageUrl: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&auto=format&fit=crop&q=80',
+    kanjiTitle: '強欲の悪魔',
+    rankBadge: 'RANGO A+',
     name: 'Vulcan de la Codicia',
     title: 'Demonio Menor Supremo del Castillo',
     emoji: '👹',
@@ -728,6 +761,9 @@ export const WEEKLY_BOSSES: WeeklyBoss[] = [
   // =========================================================================
   {
     id: 'boss_baran',
+    imageUrl: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=600&auto=format&fit=crop&q=80',
+    kanjiTitle: '白炎の雷帝',
+    rankBadge: 'RANGO S-',
     name: 'Baran, el Monarca de las Llamas Blancas',
     title: 'Soberano de los Demonios y Jinete del Wyvern Kaisel',
     emoji: '⚡',
@@ -799,6 +835,9 @@ export const WEEKLY_BOSSES: WeeklyBoss[] = [
   // =========================================================================
   {
     id: 'boss_queen_ant',
+    imageUrl: 'https://images.unsplash.com/photo-1550684848-fac1c5b4e853?w=600&auto=format&fit=crop&q=80',
+    kanjiTitle: '蟻の女王',
+    rankBadge: 'RANGO S',
     name: 'Reina Hormiga de la Isla Jeju',
     title: 'Matriarca del Enjambre Devorador',
     emoji: '🐜',
@@ -870,6 +909,9 @@ export const WEEKLY_BOSSES: WeeklyBoss[] = [
   // =========================================================================
   {
     id: 'boss_beru',
+    imageUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&auto=format&fit=crop&q=80',
+    kanjiTitle: '捕食の王',
+    rankBadge: 'RANGO S+',
     name: 'Beru, el Rey Hormiga Depredador',
     title: 'Monarca de la Isla Jeju',
     emoji: '👑',
@@ -941,6 +983,9 @@ export const WEEKLY_BOSSES: WeeklyBoss[] = [
   // =========================================================================
   {
     id: 'boss_goto_ryuji',
+    imageUrl: 'https://images.unsplash.com/photo-1589254065878-42c9da997008?w=600&auto=format&fit=crop&q=80',
+    kanjiTitle: '抜刀の鬼神',
+    rankBadge: 'RANGO NACIONAL',
     name: 'Goto Ryuji, la Espada Fantasma Imperial',
     title: 'Cazador Más Poderoso del Draw Sword Guild',
     emoji: '🗡️',
@@ -1012,6 +1057,9 @@ export const WEEKLY_BOSSES: WeeklyBoss[] = [
   // =========================================================================
   {
     id: 'boss_kamish',
+    imageUrl: 'https://images.unsplash.com/photo-1577493340887-b7bdef05080f?w=600&auto=format&fit=crop&q=80',
+    kanjiTitle: '破滅の竜王',
+    rankBadge: 'CATÁSTROFE',
     name: 'Kamish, la Mayor Calamidad de la Humanidad',
     title: 'El Dragón Rúnico de la Primera Puerta S',
     emoji: '🐲',
@@ -1083,6 +1131,9 @@ export const WEEKLY_BOSSES: WeeklyBoss[] = [
   // =========================================================================
   {
     id: 'boss_sillad',
+    imageUrl: 'https://images.unsplash.com/photo-1483921020237-2ff51e8e4b22?w=600&auto=format&fit=crop&q=80',
+    kanjiTitle: '白雪の君主',
+    rankBadge: 'MONARCA',
     name: 'Sillad, el Monarca de la Escarcha',
     title: 'Gobernante del Frío Eterno y las Nieves Blancas',
     emoji: '🌨️',
@@ -1154,6 +1205,9 @@ export const WEEKLY_BOSSES: WeeklyBoss[] = [
   // =========================================================================
   {
     id: 'boss_rakan',
+    imageUrl: 'https://images.unsplash.com/photo-1564865878688-9a244444042a?w=600&auto=format&fit=crop&q=80',
+    kanjiTitle: '百獣の王',
+    rankBadge: 'MONARCA',
     name: 'Rakan, el Monarca de las Bestias',
     title: 'Rey de los Colmillos Blancos y la Ferocidad Primitiva',
     emoji: '🐺',
@@ -1225,6 +1279,9 @@ export const WEEKLY_BOSSES: WeeklyBoss[] = [
   // =========================================================================
   {
     id: 'boss_yogumunt',
+    imageUrl: 'https://images.unsplash.com/photo-1507499739999-097706ad8914?w=600&auto=format&fit=crop&q=80',
+    kanjiTitle: '変容の君主',
+    rankBadge: 'MONARCA',
     name: 'Yogumunt, el Monarca Espectral',
     title: 'Soberano de las Ilusiones y la Transfiguración',
     emoji: '👁️',
@@ -1296,6 +1353,9 @@ export const WEEKLY_BOSSES: WeeklyBoss[] = [
   // =========================================================================
   {
     id: 'boss_tarnak',
+    imageUrl: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&auto=format&fit=crop&q=80',
+    kanjiTitle: '鉄躯の君主',
+    rankBadge: 'MONARCA',
     name: 'Tarnak, el Monarca de Hierro',
     title: 'Coloso Indestructible de la Densidad Infinita',
     emoji: '🪨',
@@ -1367,6 +1427,9 @@ export const WEEKLY_BOSSES: WeeklyBoss[] = [
   // =========================================================================
   {
     id: 'boss_bellion',
+    imageUrl: 'https://images.unsplash.com/photo-1579783902614-a3fb3927b675?w=600&auto=format&fit=crop&q=80',
+    kanjiTitle: '影の総軍団長',
+    rankBadge: 'GRAN MARISCAL',
     name: 'Bellion, Gran Mariscal de las Sombras',
     title: 'Primer Siervo Nacido del Árbol del Mundo',
     emoji: '🪓',
@@ -1438,6 +1501,9 @@ export const WEEKLY_BOSSES: WeeklyBoss[] = [
   // =========================================================================
   {
     id: 'boss_antares',
+    imageUrl: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=600&auto=format&fit=crop&q=80',
+    kanjiTitle: '破滅の君主',
+    rankBadge: 'MONARCA SUPREMO',
     name: 'Antares, el Monarca de la Destrucción',
     title: 'Rey de los Dragones del Caos y Fin del Mundo',
     emoji: '🐉',
@@ -1509,6 +1575,9 @@ export const WEEKLY_BOSSES: WeeklyBoss[] = [
   // =========================================================================
   {
     id: 'boss_shadow_monarch',
+    imageUrl: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&auto=format&fit=crop&q=80',
+    kanjiTitle: '影の君主',
+    rankBadge: 'TRASCENDENTE',
     name: 'El Monarca de las Sombras',
     title: 'Gobernante de la Muerte Eterna y la Cúspide del Sistema',
     emoji: '🌌',
