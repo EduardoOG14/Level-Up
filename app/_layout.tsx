@@ -8,12 +8,18 @@ import { useUserStore } from '../stores/userStore';
 import { useUpdateStore } from '../stores/updateStore';
 import { UpdateModal } from '../components/system/UpdateModal';
 import { Colors } from '../constants/theme';
+import { setupNotificationChannels } from '../services/notifications';
 
 export default function RootLayout() {
   const { loadLocalUser } = useUserStore();
   const { checkUpdate } = useUpdateStore();
   const pathname = usePathname();
   const router = useRouter();
+
+  // Inicializar canales de notificación prioritarios en Android
+  useEffect(() => {
+    setupNotificationChannels();
+  }, []);
 
   // 1. Ocultar botones de navegación de Android (Immersive Sticky Mode)
   useEffect(() => {

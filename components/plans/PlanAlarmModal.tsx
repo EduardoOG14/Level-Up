@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { Colors, Fonts, Spacing, Radius } from '../../constants/theme';
 import { usePlanStore } from '../../stores/planStore';
-import { sendTestNotification } from '../../services/notifications';
+import { sendTestNotification, CORTEXNotifications } from '../../services/notifications';
 
 interface PlanAlarmModalProps {
   visible: boolean;
@@ -61,19 +61,56 @@ export function PlanAlarmModal({ visible, onClose }: PlanAlarmModalProps) {
   const handleTestNotification = async () => {
     setTesting(true);
     try {
+      const granted = await CORTEXNotifications.requestPermissions();
+      if (!granted) {
+        Alert.alert(
+          'Permiso de Notificación Denegado',
+          'Debes permitir las notificaciones de la app en los ajustes de tu sistema para que la alarma y los avisos puedan sonar.'
+        );
+        return;
+      }
       await sendTestNotification(
-        '⚡ CORTEX: Enlace Táctico Activado',
-        `Alarma configurada para las ${formatTime(hour, minute)}. El Sistema te notificará puntualmente.`
+        '⚔️ ALERTA ACÚSTICA CORTEX',
+        `Prueba de sonido completada. Tu alarma de las ${formatTime(hour, minute)} sonará puntualmente con este canal prioritario.`
       );
-      Alert.alert('¡Notificación enviada!', 'Revisa la barra superior de tu teléfono en 2 segundos.');
+      Alert.alert('¡Alerta de Prueba Enviada!', 'El canal de audio y vibración ha sido disparado. Revisa la barra superior de tu dispositivo.');
     } catch {
-      Alert.alert('Permiso requerido', 'Asegúrate de permitir las notificaciones en los ajustes de tu teléfono.');
+      Alert.alert('Permiso Requerido', 'Asegúrate de permitir las notificaciones y alarmas exactas en los ajustes de tu teléfono.');
     } finally {
       setTesting(false);
     }
   };
 
   const handleSave = async () => {
+    if (enabled || hydration || quests) {
+      const granted = await CORTEXNotifications.requestPermissions();
+      if (!granted) {
+        Alert.alert(
+          'Permiso Requerido para Alarmas',
+          'Para que la alarma de las ' + formatTime(hour, minute) + ' suene en tu dispositivo, debes autorizar las notificaciones de la app.',
+          [
+            {
+              text: 'Guardar de todos modos',
+              onPress: async () => {
+                await doSaveSettings();
+              },
+            },
+            {
+              text: 'Dar Permisos',
+              onPress: async () => {
+                await CORTEXNotifications.requestPermissions();
+                await doSaveSettings();
+              },
+            },
+          ]
+        );
+        return;
+      }
+    }
+    await doSaveSettings();
+  };
+
+  const doSaveSettings = async () => {
     await updateAlarmSettings({
       enabled,
       hour,
@@ -82,7 +119,12 @@ export function PlanAlarmModal({ visible, onClose }: PlanAlarmModalProps) {
       hydrationReminder: hydration,
       questsReminder: quests,
     });
-    Alert.alert('Configuración Guardada', 'Tus alarmas y recordatorios han sido sincronizados por CORTEX.');
+    Alert.alert(
+      'Alarma Sincronizada',
+      enabled
+        ? `Directiva de combate programada para las ${formatTime(hour, minute)} con alerta acústica CORTEX.`
+        : 'Alarmas desactivadas correctamente.'
+    );
     onClose();
   };
 

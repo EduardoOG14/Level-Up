@@ -145,7 +145,7 @@ export const usePlanStore = create<PlanStore>((set, get) => ({
     const { alarmSettings } = get();
 
     if (alarmSettings.enabled && plan) {
-      await scheduleWorkoutAlarm(alarmSettings.hour, alarmSettings.minute, plan.title);
+      await scheduleWorkoutAlarm(alarmSettings.hour, alarmSettings.minute, plan.title, alarmSettings.days);
     }
   },
 
@@ -235,7 +235,7 @@ export const usePlanStore = create<PlanStore>((set, get) => ({
 
     // Actualizar Alarma de Entrenamiento
     if (updated.enabled && plan) {
-      await scheduleWorkoutAlarm(updated.hour, updated.minute, plan.title);
+      await scheduleWorkoutAlarm(updated.hour, updated.minute, plan.title, updated.days);
     } else {
       await cancelNotificationsByCategory('workout');
     }
