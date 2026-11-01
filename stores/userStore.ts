@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getLevelByXP, getRankByXP } from '../constants/ranks';
+import { useShadowArmyStore } from './shadowArmyStore';
 
 export interface UserStats {
   strength: number;
@@ -104,7 +105,20 @@ export const useUserStore = create<UserStore>((set, get) => ({
     const { user } = get();
     if (!user) return;
 
-    const newXP = Math.max(0, user.totalXP + amount);
+    // Bonificación pasiva del Ejército de Sombras (si hay un Comandante activo con buff 'xp')
+    let finalAmount = amount;
+    if (amount > 0) {
+      try {
+        const xpMultiplier = useShadowArmyStore.getState().getActiveBuffMultiplier('xp');
+        if (xpMultiplier > 1) {
+          finalAmount = Math.round(amount * xpMultiplier);
+        }
+      } catch (e) {
+        // Fallback silencioso si shadowArmyStore aún no inicializó
+      }
+    }
+
+    const newXP = Math.max(0, user.totalXP + finalAmount);
     const newLevel = getLevelByXP(newXP);
     const newRank = getRankByXP(newXP);
 

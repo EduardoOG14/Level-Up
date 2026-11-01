@@ -52,6 +52,9 @@ import { useUpdateStore } from '../../stores/updateStore';
 import { getCurrentAppVersion } from '../../services/updateService';
 import { BossTowerModal } from '../../components/profile/BossTowerModal';
 import { useBossStore } from '../../stores/bossStore';
+import { HunterHexagonRadar } from '../../components/profile/HunterHexagonRadar';
+import { ShadowArmyModal } from '../../components/workout/ShadowArmyModal';
+import { useShadowArmyStore } from '../../stores/shadowArmyStore';
 export { PRESET_AVATARS, renderAvatarContent };
 
 const GOALS_MAP: Record<string, string> = {
@@ -95,6 +98,8 @@ export default function ProfileScreen() {
   const { currentTitle } = useTitleStore();
   const { defeatedBossIds, getActiveBoss, initialize: initBossStore } = useBossStore();
   const [showBossTowerModal, setShowBossTowerModal] = useState(false);
+  const [showShadowArmyModal, setShowShadowArmyModal] = useState(false);
+  const { soldiers, initialize: initShadowArmy } = useShadowArmyStore();
   const [soundEnabled, setSoundEnabled] = useState(SoundEffects.getIsEnabled());
   const [showSmartwatchModal, setShowSmartwatchModal] = useState(false);
   const [showCortexKeyModal, setShowCortexKeyModal] = useState(false);
@@ -118,6 +123,7 @@ export default function ProfileScreen() {
     initEnergy();
     if (user?.uid) {
       initBossStore(user.uid);
+      initShadowArmy(user.uid);
     }
     const loop = Animated.loop(
       Animated.sequence([
@@ -485,6 +491,17 @@ export default function ProfileScreen() {
                 Torre ({defeatedBossIds.length}/22)
               </Text>
             </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.heroActionBtn, { borderColor: 'rgba(168, 85, 247, 0.4)', backgroundColor: 'rgba(168, 85, 247, 0.08)' }]}
+              onPress={() => setShowShadowArmyModal(true)}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="skull" size={15} color="#C084FC" />
+              <Text style={[styles.heroActionBtnText, { color: '#C084FC' }]}>
+                Sombras ({soldiers.length})
+              </Text>
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -536,6 +553,13 @@ export default function ProfileScreen() {
             <Text style={styles.bossTowerActionText}>VER SALÓN DE MONARCAS ›</Text>
           </View>
         </TouchableOpacity>
+
+        {/* RADAR HEXAGONAL DE ATRIBUTOS DEL CAZADOR */}
+        <HunterHexagonRadar
+          stats={user.stats || DEFAULT_STATS}
+          hunterLevel={user.level || 1}
+          combatPower={combatPower}
+        />
 
         {/* 2. LA ICÓNICA [ VENTANA DE ESTADO ] DE SOLO LEVELING */}
         <View style={styles.statusWindowCard}>
@@ -1327,6 +1351,13 @@ export default function ProfileScreen() {
         visible={showBossTowerModal}
         onClose={() => setShowBossTowerModal(false)}
         onNavigateToWorkouts={() => router.push('/workouts')}
+      />
+
+      {/* Modal del Ejército de Sombras */}
+      <ShadowArmyModal
+        visible={showShadowArmyModal}
+        onClose={() => setShowShadowArmyModal(false)}
+        uid={user?.uid || 'guest'}
       />
 
       {/* Modal de Gestión y Sincronización Smartwatch */}

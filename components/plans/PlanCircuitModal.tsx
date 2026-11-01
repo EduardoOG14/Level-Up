@@ -33,6 +33,9 @@ import { useUserStore } from '../../stores/userStore';
 import { Haptics } from '../../services/haptics';
 import { SoundEffects } from '../../services/soundEffects';
 import { RecoveryModal } from '../recovery/RecoveryModal';
+import { GymFocusControls } from '../workout/GymFocusControls';
+import { ExerciseLogbookCard } from '../workout/ExerciseLogbookCard';
+import { RaidClearShareModal } from '../workout/RaidClearShareModal';
 
 export interface CustomCircuitData {
   title: string;
@@ -174,6 +177,8 @@ function PlanCircuitContent({
   // Estado de la pausa de descanso de 20 segundos
   const [restSecondsLeft, setRestSecondsLeft] = useState(20);
   const [showRecovery, setShowRecovery] = useState(false);
+  const [isGymFocusActive, setIsGymFocusActive] = useState(false);
+  const [showRaidShareModal, setShowRaidShareModal] = useState(false);
 
   // Animaciones
   const scanAnim = useRef(new Animated.Value(0)).current;
@@ -843,6 +848,19 @@ function PlanCircuitContent({
             />
           </View>
 
+          {/* Controles de Música y Modo Gym Focus */}
+          <GymFocusControls
+            isFocusModeActive={isGymFocusActive}
+            onToggleFocusMode={(active) => {
+              setIsGymFocusActive(active);
+              if (active) {
+                // Silenciar o atenuar voz de IA para no colisionar con Spotify
+                setIsVoiceEnabled(false);
+                CortexVoice.stop();
+              }
+            }}
+          />
+
           <ScrollView contentContainerStyle={styles.workoutScrollContent} showsVerticalScrollIndicator={false}>
             {/* Video / GIF Biomecánico del Ejercicio con Escáner Láser */}
             <View style={styles.robotImageWrapper}>
@@ -1095,6 +1113,16 @@ function PlanCircuitContent({
                   <Ionicons name="book-outline" size={14} color={Colors.brand.accent} />
                   <Text style={styles.reviewGuideBtnText}>Repasar Guía de Técnica Paso a Paso</Text>
                 </TouchableOpacity>
+
+                {/* Logbook Táctico: Registro de Cargas y Repeticiones Reales */}
+                <ExerciseLogbookCard
+                  exerciseId={activeExercise.id || activeExercise.name}
+                  exerciseName={activeExercise.name}
+                  currentSet={currentExerciseIndex + 1}
+                  totalSets={circuit.length}
+                  uid={user?.uid || 'guest'}
+                  targetRepsLabel={activeExercise.repsLabel}
+                />
               </View>
             )}
 
@@ -1303,6 +1331,21 @@ function PlanCircuitContent({
             </Text>
           </TouchableOpacity>
 
+          {/* Botón Compartir Tarjeta de Victoria */}
+          <TouchableOpacity
+            style={[styles.recoveryCoolDownBtn, { borderColor: '#3B82F6', backgroundColor: 'rgba(59, 130, 246, 0.1)', marginTop: 8 }]}
+            onPress={() => {
+              Haptics.medium();
+              setShowRaidShareModal(true);
+            }}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="share-social-outline" size={18} color="#60A5FA" />
+            <Text style={[styles.recoveryCoolDownBtnText, { color: '#60A5FA' }]}>
+              Generar Tarjeta de Asalto Táctico ›
+            </Text>
+          </TouchableOpacity>
+
           <TouchableOpacity
             style={styles.claimVictoryBtn}
             onPress={handleClaimAndClose}
@@ -1318,6 +1361,20 @@ function PlanCircuitContent({
       <RecoveryModal
         visible={showRecovery}
         onClose={() => setShowRecovery(false)}
+      />
+
+      {/* Tarjeta de Victoria Compartible */}
+      <RaidClearShareModal
+        visible={showRaidShareModal}
+        onClose={() => setShowRaidShareModal(false)}
+        bossName={isCustom ? (customCircuit?.title || 'Monarca del Abismo') : planName}
+        bossTitle={isCustom ? (customCircuit?.subtitle || 'Mazmorra de Rango S') : `Entrenamiento Día ${dayNumber}`}
+        rankBadge={user?.rank || 'RANGO E'}
+        hunterName={user?.name || 'Cazador Desconocido'}
+        hunterLevel={user?.level || 1}
+        xpEarned={xpReward}
+        totalTimeMinutes={duration}
+        streakDays={user?.streak || 1}
       />
     </SafeAreaView>
   );

@@ -53,6 +53,9 @@ import { useSmartwatchStore } from '../../stores/smartwatchStore';
 import { SMARTWATCH_BRANDS } from '../../constants/smartwatch';
 import { useCortexEnergyStore } from '../../stores/cortexEnergyStore';
 import { CortexKeyModal } from '../../components/ai/CortexKeyModal';
+import { useShadowArmyStore } from '../../stores/shadowArmyStore';
+import { ShadowArmyModal } from '../../components/workout/ShadowArmyModal';
+import { RaidClearShareModal } from '../../components/workout/RaidClearShareModal';
 import type { UserContext } from '../../services/gemini';
 
 const WORKOUT_TYPES = [
@@ -156,13 +159,20 @@ export default function WorkoutsScreen() {
   const [bossCountdown, setBossCountdown] = useState<BossCountdown>(getBossCountdown());
   const currentWeekKey = getCurrentWeekKey();
   const [showKeyModal, setShowKeyModal] = useState(false);
+  const [showShadowArmyModal, setShowShadowArmyModal] = useState(false);
+  const [showBossVictoryShareModal, setShowBossVictoryShareModal] = useState(false);
+  const [lastDefeatedBossInfo, setLastDefeatedBossInfo] = useState<any>(null);
+  const { soldiers, initialize: initShadowArmy, extractShadow } = useShadowArmyStore();
   const { dailyManaRemaining, isUnlimited, initialize: initEnergy } = useCortexEnergyStore();
 
   const pulseAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     initEnergy();
-  }, [initEnergy]);
+    if (user?.uid) {
+      initShadowArmy(user.uid);
+    }
+  }, [initEnergy, initShadowArmy, user?.uid]);
 
   useEffect(() => {
     const loop = Animated.loop(
@@ -384,14 +394,22 @@ export default function WorkoutsScreen() {
         routineSnapshot,
         user?.level || 1
       );
+
+      // ⚔️ SURGE: Extraer el alma del Jefe derrotado para el Ejército de Sombras
+      await extractShadow(currentBoss.id, user.uid);
+
+      setLastDefeatedBossInfo({
+        name: currentBoss.name,
+        title: currentBoss.title,
+        rank: 'RANGO S',
+        xpReward: xpReward,
+      });
+
       Haptics.triumph();
       SoundEffects.playLevelUp();
 
-      const victoryMessage = result.nextBoss
-        ? `¡Has aniquilado a ${result.defeatedBoss.name}! 👑\n\nEl Sistema CORTEX te otorga +${xpReward} XP y abre el acceso al siguiente escalón del abismo: "${result.nextBoss.name}".`
-        : `¡Has aniquilado a ${result.defeatedBoss.name}! 👑\n\n¡Has vencido a todos los Monarcas del Sistema! Has alcanzado la cúspide de poder absoluto de Cazador Legendario.`;
-
-      Alert.alert('¡Jefe de Mazmorra Derrotado! ⚔️', victoryMessage);
+      // Abrir modal de victoria compartible y extracción de sombras
+      setShowBossVictoryShareModal(true);
     } else {
       Haptics.triumph();
       Alert.alert('¡Mazmorra Conquistada! 🏆', `Has obtenido +${xpReward} XP del Sistema CORTEX.`);
@@ -1088,6 +1106,29 @@ export default function WorkoutsScreen() {
         {/* ================= PESTAÑA 2: MAZMORRA IA & ASALTO SEMANAL ================= */}
         {activeTab === 'custom' && (
           <View style={styles.dungeonContainer}>
+            {/* Acceso Rápido al Ejército de Sombras */}
+            <TouchableOpacity
+              style={styles.shadowArmyBanner}
+              onPress={() => {
+                Haptics.medium();
+                setShowShadowArmyModal(true);
+              }}
+              activeOpacity={0.8}
+            >
+              <View style={styles.shadowArmyBannerIcon}>
+                <Ionicons name="skull" size={20} color="#C084FC" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.shadowArmyBannerTitle}>⚔️ EJÉRCITO DE SOMBRAS EXTRAÍDO</Text>
+                <Text style={styles.shadowArmyBannerSub}>
+                  {soldiers.length > 0
+                    ? `${soldiers.length} Monarcas reclutados • Pulsa para equipar Comandante`
+                    : 'Vence jefes de mazmorra para extraer sus almas y activar buffs pasivos'}
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={16} color="#C084FC" />
+            </TouchableOpacity>
+
             {/* Tarjeta Hero: Asalto de Mazmorra Semanal (Modo Red Gate / Monarca) */}
             <Animated.View
               style={[
@@ -1687,11 +1728,63 @@ export default function WorkoutsScreen() {
           }}
         />
       )}
+      {/* Modal del Ejército de Sombras */}
+      <ShadowArmyModal
+        visible={showShadowArmyModal}
+        onClose={() => setShowShadowArmyModal(false)}
+        uid={user?.uid || 'guest'}
+      />
+
+      {/* Modal de Asalto y Tarjeta de Victoria de Jefe de Mazmorra */}
+      <RaidClearShareModal
+        visible={showBossVictoryShareModal}
+        onClose={() => setShowBossVictoryShareModal(false)}
+        bossName={lastDefeatedBossInfo?.name || currentBoss.name}
+        bossTitle={lastDefeatedBossInfo?.title || currentBoss.title}
+        rankBadge={lastDefeatedBossInfo?.rank || 'RANGO S'}
+        hunterName={user?.name || 'Cazador del Sistema'}
+        hunterLevel={user?.level || 1}
+        xpEarned={lastDefeatedBossInfo?.xpReward || currentBoss.xpReward}
+        totalTimeMinutes={30}
+        streakDays={user?.streak || 1}
+      />
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  shadowArmyBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: 'rgba(168, 85, 247, 0.1)',
+    borderRadius: Radius.lg,
+    borderWidth: 1.5,
+    borderColor: 'rgba(192, 132, 252, 0.35)',
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    marginBottom: 16,
+  },
+  shadowArmyBannerIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: 'rgba(168, 85, 247, 0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  shadowArmyBannerTitle: {
+    color: '#C084FC',
+    fontSize: 12.5,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
+  shadowArmyBannerSub: {
+    color: '#94A3B8',
+    fontSize: 11,
+    marginTop: 2,
+    lineHeight: 15,
+  },
   safe: {
     flex: 1,
     backgroundColor: Colors.bg.primary,
