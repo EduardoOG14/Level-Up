@@ -1,11 +1,22 @@
 import Constants from 'expo-constants';
 import * as Linking from 'expo-linking';
+import * as FileSystem from 'expo-file-system/legacy';
+import * as IntentLauncher from 'expo-intent-launcher';
+import { Platform } from 'react-native';
 import packageJson from '../package.json';
 
 export const GITHUB_CONFIG = {
   owner: 'EduardoOG14',
   repo: 'Level-Up',
 };
+
+export interface ApkDownloadProgress {
+  totalBytesWritten: number;
+  totalBytesExpectedToWrite: number;
+  progressRatio: number; // 0.0 to 1.0
+  progressPercent: number; // 0 to 100
+  progressText: string;
+}
 
 export interface UpdateCheckResult {
   hasUpdate: boolean;
@@ -26,12 +37,12 @@ export function getCurrentAppVersion(): string {
     Constants.expoConfig?.version ||
     Constants.manifest2?.extra?.expoClient?.version ||
     packageJson.version ||
-    '1.0.5';
+    '1.0.7';
   return version.replace(/^v/, '');
 }
 
 /**
- * Compara dos versiones en formato semver (ej: "1.0.6" > "1.0.5")
+ * Compara dos versiones en formato semver (ej: "1.0.7" > "1.0.6")
  * Retorna true si latest es mayor que current
  */
 export function isNewerVersion(latest: string, current: string): boolean {
@@ -136,7 +147,86 @@ export async function checkGitHubReleaseUpdate(): Promise<UpdateCheckResult> {
 }
 
 /**
- * Abre el enlace de descarga del APK en el navegador de Android para instalar la actualización
+ * Descarga el archivo APK directamente en la app y lanza el instalador nativo de Android
+ * Sin obligar al usuario a salir de la app ni ir a páginas web.
+ */
+export async function downloadAndInstallApkDirectly(
+  apkUrl: string,
+  onProgress?: (progress: ApkDownloadProgress) => void
+): Promise<void> {
+  if (Platform.OS !== 'android') {
+    throw new Error('La instalación interna de APK solo está disponible en dispositivos Android.');
+  }
+
+  const destinationFileUri = `${FileSystem.cacheDirectory}level-up-latest.apk`;
+
+  // 1. Limpieza de APK previo si existiese
+  try {
+    const existing = await FileSystem.getInfoAsync(destinationFileUri);
+    if (existing.exists) {
+      await FileSystem.deleteAsync(destinationFileUri, { idempotent: true });
+    }
+  } catch (e) {
+    console.warn('[UpdateService] Error limpiando APK previo:', e);
+  }
+
+  // 2. Descarga streaming con reporte de progreso
+  const downloadResumable = FileSystem.createDownloadResumable(
+    apkUrl,
+    destinationFileUri,
+    {},
+    (downloadProgress) => {
+      const written = downloadProgress.totalBytesWritten;
+      const expected = downloadProgress.totalBytesExpectedToWrite;
+      const ratio = expected > 0 ? Math.min(1, Math.max(0, written / expected)) : 0;
+      const percent = Math.round(ratio * 100);
+      const writtenMb = (written / (1024 * 1024)).toFixed(1);
+      const expectedMb = expected > 0 ? (expected / (1024 * 1024)).toFixed(1) : '?';
+
+      if (onProgress) {
+        onProgress({
+          totalBytesWritten: written,
+          totalBytesExpectedToWrite: expected,
+          progressRatio: ratio,
+          progressPercent: percent,
+          progressText: `${writtenMb} MB / ${expectedMb} MB (${percent}%)`,
+        });
+      }
+    }
+  );
+
+  const downloadResult = await downloadResumable.downloadAsync();
+  if (!downloadResult || !downloadResult.uri) {
+    throw new Error('La descarga del archivo APK se interrumpió.');
+  }
+
+  // 3. Obtener Content URI compatible con Android FileProvider
+  const contentUri = await FileSystem.getContentUriAsync(downloadResult.uri);
+
+  // 4. Lanzar instalador del sistema Android
+  try {
+    await IntentLauncher.startActivityAsync('android.intent.action.VIEW', {
+      data: contentUri,
+      type: 'application/vnd.android.package-archive',
+      flags: 1, // Intent.FLAG_GRANT_READ_URI_PERMISSION
+    });
+  } catch (err: any) {
+    console.warn('[UpdateService] Falló intent directo, solicitando permiso de instalación:', err);
+    try {
+      // Si el usuario no ha concedido permiso de instalar fuentes desconocidas para Level Up
+      await IntentLauncher.startActivityAsync(
+        'android.settings.MANAGE_UNKNOWN_APP_SOURCES',
+        { data: 'package:com.levelup.app' }
+      );
+    } catch (e2) {
+      // Fallback a enlace en navegador
+      await openApkDownload(apkUrl);
+    }
+  }
+}
+
+/**
+ * Fallback: Abre el enlace de descarga en el navegador si el instalador nativo es bloqueado
  */
 export async function openApkDownload(apkUrl: string | null, releaseUrl?: string) {
   const targetUrl = apkUrl || releaseUrl || `https://github.com/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/releases`;

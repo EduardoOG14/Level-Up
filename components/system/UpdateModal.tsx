@@ -7,13 +7,25 @@ import {
   TouchableOpacity,
   ScrollView,
   Animated,
+  ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useUpdateStore } from '../../stores/updateStore';
 import { Colors, Fonts, Spacing, Radius } from '../../constants/theme';
 
 export function UpdateModal() {
-  const { isModalVisible, updateInfo, dismissModal, downloadLatestApk } = useUpdateStore();
+  const {
+    isModalVisible,
+    updateInfo,
+    isDownloading,
+    downloadProgress,
+    downloadProgressText,
+    isInstalling,
+    downloadError,
+    dismissModal,
+    startInAppUpdate,
+    downloadLatestApk,
+  } = useUpdateStore();
 
   // Animación de pulso continuo (Solo Leveling HUD)
   const pulseAnim = useRef(new Animated.Value(0)).current;
@@ -64,11 +76,21 @@ export function UpdateModal() {
           <View style={styles.header}>
             <View style={styles.titleRow}>
               <Animated.View style={[styles.iconSquircle, { transform: [{ scale: glowScale }] }]}>
-                <Ionicons name="cloud-download" size={20} color="#00F0FF" />
+                <Ionicons
+                  name={isInstalling ? 'checkmark-circle' : 'cloud-download'}
+                  size={20}
+                  color={isInstalling ? '#10B981' : '#00F0FF'}
+                />
               </Animated.View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.systemTag}>[ SISTEMA: ACTUALIZACIÓN DISPONIBLE ]</Text>
-                <Text style={styles.systemSub}>DIRECTIVA DE ACTUALIZACIÓN CORTEX</Text>
+                <Text style={styles.systemTag}>
+                  {isInstalling
+                    ? '[ SISTEMA: INSTALADOR ACTIVO ]'
+                    : isDownloading
+                    ? '[ SISTEMA: DESCARGANDO PARCHE ]'
+                    : '[ SISTEMA: ACTUALIZACIÓN DISPONIBLE ]'}
+                </Text>
+                <Text style={styles.systemSub}>ACTUALIZACIÓN DIRECTA EN LA APP</Text>
               </View>
             </View>
           </View>
@@ -98,32 +120,138 @@ export function UpdateModal() {
             </ScrollView>
           </View>
 
+          {/* Barra de Progreso Holográfica en Descarga */}
+          {isDownloading && (
+            <View style={styles.progressContainer}>
+              <View style={styles.progressHeader}>
+                <View style={styles.downloadStatusRow}>
+                  <ActivityIndicator size="small" color="#00F0FF" />
+                  <Text style={styles.progressStatusText}>DESCARGANDO PARCHE CORTEX...</Text>
+                </View>
+                <Text style={styles.progressPercentText}>{Math.round(downloadProgress * 100)}%</Text>
+              </View>
+
+              <View style={styles.progressTrack}>
+                <View
+                  style={[
+                    styles.progressFill,
+                    { width: `${Math.max(5, Math.round(downloadProgress * 100))}%` },
+                  ]}
+                />
+              </View>
+
+              <Text style={styles.progressBytesText}>
+                {downloadProgressText || 'Descargando datos...'}
+              </Text>
+            </View>
+          )}
+
+          {/* Estado de Instalación Lanzada */}
+          {isInstalling && (
+            <View style={styles.installingContainer}>
+              <Ionicons name="shield-checkmark" size={20} color="#10B981" />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.installingTitle}>Instalador nativo ejecutándose</Text>
+                <Text style={styles.installingSubtitle}>
+                  Confirma la actualización en el cuadro del sistema. Tus datos no se perderán.
+                </Text>
+              </View>
+            </View>
+          )}
+
+          {/* Mensaje de Error en caso de falla */}
+          {!!downloadError && (
+            <View style={styles.errorContainer}>
+              <Ionicons name="alert-circle" size={16} color="#EF4444" />
+              <Text style={styles.errorText}>{downloadError}</Text>
+            </View>
+          )}
+
           {/* Indicador de Seguridad Local */}
-          <View style={styles.safetyBadgeRow}>
-            <Ionicons name="shield-checkmark-outline" size={14} color="#10B981" />
-            <Text style={styles.safetyBadgeText}>
-              Actualización directa: Tus atributos, rachas y progreso se conservarán intactos.
-            </Text>
-          </View>
+          {!isDownloading && !isInstalling && (
+            <View style={styles.safetyBadgeRow}>
+              <Ionicons name="shield-checkmark-outline" size={14} color="#10B981" />
+              <Text style={styles.safetyBadgeText}>
+                Sin páginas externas: Se descarga e instala directamente desde tu dispositivo.
+              </Text>
+            </View>
+          )}
 
           {/* Botones de Acción Tácticos */}
           <View style={styles.actionsContainer}>
-            <TouchableOpacity
-              style={styles.downloadBtn}
-              onPress={downloadLatestApk}
-              activeOpacity={0.8}
-            >
-              <Ionicons name="download" size={18} color="#0A0A0F" />
-              <Text style={styles.downloadBtnText}>[ DESCARGAR E INSTALAR APK ]</Text>
-            </TouchableOpacity>
+            {isDownloading ? (
+              <View style={[styles.downloadBtn, styles.downloadBtnActive]}>
+                <ActivityIndicator size="small" color="#0A0A0F" />
+                <Text style={styles.downloadBtnText}>
+                  [ DESCARGANDO... {Math.round(downloadProgress * 100)}% ]
+                </Text>
+              </View>
+            ) : isInstalling ? (
+              <>
+                <TouchableOpacity
+                  style={styles.downloadBtn}
+                  onPress={startInAppUpdate}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="refresh" size={18} color="#0A0A0F" />
+                  <Text style={styles.downloadBtnText}>[ REABRIR INSTALADOR ]</Text>
+                </TouchableOpacity>
 
-            <TouchableOpacity
-              style={styles.postponeBtn}
-              onPress={dismissModal}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.postponeBtnText}>Recordar más tarde</Text>
-            </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.postponeBtn}
+                  onPress={dismissModal}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.postponeBtnText}>Cerrar</Text>
+                </TouchableOpacity>
+              </>
+            ) : downloadError ? (
+              <>
+                <TouchableOpacity
+                  style={styles.downloadBtn}
+                  onPress={startInAppUpdate}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="refresh" size={18} color="#0A0A0F" />
+                  <Text style={styles.downloadBtnText}>[ REINTENTAR EN LA APP ]</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.secondaryBtn}
+                  onPress={downloadLatestApk}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.secondaryBtnText}>Abrir descarga en navegador</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.postponeBtn}
+                  onPress={dismissModal}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.postponeBtnText}>Recordar más tarde</Text>
+                </TouchableOpacity>
+              </>
+            ) : (
+              <>
+                <TouchableOpacity
+                  style={styles.downloadBtn}
+                  onPress={startInAppUpdate}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="flash" size={18} color="#0A0A0F" />
+                  <Text style={styles.downloadBtnText}>[ ACTUALIZAR DIRECTO EN LA APP ]</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.postponeBtn}
+                  onPress={dismissModal}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.postponeBtnText}>Recordar más tarde</Text>
+                </TouchableOpacity>
+              </>
+            )}
           </View>
         </Animated.View>
       </View>
@@ -134,7 +262,7 @@ export function UpdateModal() {
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.85)',
+    backgroundColor: 'rgba(0, 0, 0, 0.88)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: Spacing.base,
@@ -173,13 +301,13 @@ const styles = StyleSheet.create({
   },
   systemTag: {
     color: '#00F0FF',
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '900',
     letterSpacing: 0.8,
   },
   systemSub: {
     color: '#64748B',
-    fontSize: 10,
+    fontSize: 9.5,
     fontWeight: '700',
     marginTop: 2,
     letterSpacing: 0.5,
@@ -226,7 +354,7 @@ const styles = StyleSheet.create({
     padding: 12,
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.05)',
-    maxHeight: 140,
+    maxHeight: 120,
     gap: 6,
   },
   releaseTitle: {
@@ -235,23 +363,104 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   notesScroll: {
-    maxHeight: 100,
+    maxHeight: 85,
   },
   notesText: {
     color: '#94A3B8',
     fontSize: 11.5,
     lineHeight: 17,
   },
+  progressContainer: {
+    backgroundColor: 'rgba(0, 240, 255, 0.06)',
+    borderRadius: 14,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 240, 255, 0.25)',
+    gap: 8,
+  },
+  progressHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  downloadStatusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  progressStatusText: {
+    color: '#00F0FF',
+    fontSize: 10.5,
+    fontWeight: 'bold',
+    letterSpacing: 0.5,
+  },
+  progressPercentText: {
+    color: '#00F0FF',
+    fontSize: 13,
+    fontWeight: '900',
+  },
+  progressTrack: {
+    height: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: '#00F0FF',
+    borderRadius: 4,
+  },
+  progressBytesText: {
+    color: '#64748B',
+    fontSize: 10.5,
+    textAlign: 'right',
+  },
+  installingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(16, 185, 129, 0.3)',
+  },
+  installingTitle: {
+    color: '#10B981',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  installingSubtitle: {
+    color: '#94A3B8',
+    fontSize: 10.5,
+    lineHeight: 14,
+    marginTop: 2,
+  },
+  errorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    borderRadius: 10,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.3)',
+  },
+  errorText: {
+    color: '#EF4444',
+    fontSize: 11,
+    flex: 1,
+  },
   safetyBadgeRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 7,
-    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+    backgroundColor: 'rgba(16, 185, 129, 0.08)',
     borderRadius: 10,
     paddingHorizontal: 10,
     paddingVertical: 7,
     borderWidth: 1,
-    borderColor: 'rgba(16, 185, 129, 0.25)',
+    borderColor: 'rgba(16, 185, 129, 0.2)',
   },
   safetyBadgeText: {
     flex: 1,
@@ -278,19 +487,32 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     elevation: 4,
   },
+  downloadBtnActive: {
+    backgroundColor: '#38BDF8',
+  },
   downloadBtnText: {
     color: '#0A0A0F',
-    fontSize: 13,
+    fontSize: 12.5,
     fontWeight: '900',
     letterSpacing: 0.5,
   },
+  secondaryBtn: {
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  secondaryBtnText: {
+    color: '#00F0FF',
+    fontSize: 11.5,
+    fontWeight: '600',
+    textDecorationLine: 'underline',
+  },
   postponeBtn: {
     alignItems: 'center',
-    paddingVertical: 10,
+    paddingVertical: 8,
   },
   postponeBtnText: {
     color: '#64748B',
-    fontSize: 12,
+    fontSize: 11.5,
     fontWeight: '600',
   },
 });
