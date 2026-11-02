@@ -3,7 +3,7 @@ import {
   View, Text, StyleSheet, ScrollView, TextInput,
   TouchableOpacity, KeyboardAvoidingView, Platform, ActivityIndicator, Animated
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeScreen } from '../../components/ui/SafeScreen';
 import { sendMessageToTutor, type ChatMessage, type UserContext } from '../../services/gemini';
 import { useUserStore } from '../../stores/userStore';
 import { useSmartwatchStore } from '../../stores/smartwatchStore';
@@ -196,7 +196,7 @@ export default function TutorScreen() {
     date.toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' });
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeScreen style={styles.safe}>
       {/* Header Estilo Solo Leveling HUD */}
       <View style={styles.header}>
         <CortexAvatar size="md" showPulse={true} />
@@ -313,7 +313,7 @@ export default function TutorScreen() {
         visible={showKeyModal}
         onClose={() => setShowKeyModal(false)}
       />
-    </SafeAreaView>
+    </SafeScreen>
   );
 }
 

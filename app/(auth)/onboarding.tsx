@@ -14,6 +14,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { useUserStore, createUserProfile } from '../../stores/userStore';
 import { PRESET_AVATARS, renderAvatarContent } from '../../components/ui/Avatar';
 import { Colors, Fonts, Spacing, Radius } from '../../constants/theme';
+import { SafeScreen } from '../../components/ui/SafeScreen';
 
 const GOALS = [
   { id: 'lose_weight', label: 'Perder peso', emoji: '⚖️' },
@@ -202,7 +203,7 @@ export default function OnboardingScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeScreen style={styles.container}>
       <View style={styles.progressBar}>
         {[0, 1, 2, 3, 4].map((i) => (
           <View key={i} style={[styles.progressDot, i <= step && styles.progressDotActive]} />
@@ -461,7 +462,7 @@ export default function OnboardingScreen() {
           </Text>
         </TouchableOpacity>
       </View>
-    </View>
+    </SafeScreen>
   );
 }
 
@@ -471,7 +472,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     gap: 8,
-    paddingTop: 54,
+    paddingTop: 16,
     paddingBottom: Spacing.lg,
   },
   progressDot: {

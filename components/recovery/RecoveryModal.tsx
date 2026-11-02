@@ -10,7 +10,7 @@ import {
   Easing,
   Image,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeScreen } from '../ui/SafeScreen';
 import { Ionicons } from '@expo/vector-icons';
 import { CortexVoice } from '../../services/cortexVoice';
 import { Colors, Fonts, Spacing, Radius } from '../../constants/theme';
@@ -390,7 +390,7 @@ function RecoveryContent({
   const stationGuide = resolveExerciseGuide(currentStation.robotImageKey || currentStation.name);
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeScreen style={styles.safe}>
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerBadge}>
@@ -677,7 +677,7 @@ function RecoveryContent({
           </TouchableOpacity>
         </View>
       )}
-    </SafeAreaView>
+    </SafeScreen>
   );
 }
 

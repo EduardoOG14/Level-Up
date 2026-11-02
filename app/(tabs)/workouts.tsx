@@ -12,7 +12,7 @@ import {
   Animated,
   Modal,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeScreen } from '../../components/ui/SafeScreen';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useUserStore } from '../../stores/userStore';
@@ -574,7 +574,7 @@ export default function WorkoutsScreen() {
   });
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeScreen style={styles.safe}>
       {/* Header Estilo Solo Leveling / Sistema */}
       <View style={styles.header}>
         <View style={styles.headerSystemBadgeRow}>
@@ -1770,7 +1770,7 @@ export default function WorkoutsScreen() {
         totalTimeMinutes={30}
         streakDays={user?.streak || 1}
       />
-    </SafeAreaView>
+    </SafeScreen>
   );
 }
 

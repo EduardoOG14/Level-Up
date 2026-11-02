@@ -10,7 +10,7 @@ import {
   Alert,
   Animated,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeScreen } from '../../components/ui/SafeScreen';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -664,9 +664,9 @@ export default function HomeScreen() {
 
   if (!user || !user.goals || user.goals.length === 0) {
     return (
-      <SafeAreaView style={[styles.safe, { justifyContent: 'center', alignItems: 'center' }]}>
+      <SafeScreen style={[styles.safe, { justifyContent: 'center', alignItems: 'center' }]}>
         <ActivityIndicator size="large" color={Colors.brand.primary} />
-      </SafeAreaView>
+      </SafeScreen>
     );
   }
 
@@ -680,7 +680,7 @@ export default function HomeScreen() {
   const watchStepProgress = Math.min(100, Math.round((watchSteps / watchStepGoal) * 100));
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeScreen style={styles.safe}>
       <ScrollView
         contentContainerStyle={styles.container}
         showsVerticalScrollIndicator={false}
@@ -1246,7 +1246,7 @@ export default function HomeScreen() {
           await refreshStreakStatus();
         }}
       />
-    </SafeAreaView>
+    </SafeScreen>
   );
 }
 

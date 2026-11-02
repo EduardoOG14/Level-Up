@@ -6,10 +6,10 @@ import {
   Modal,
   TouchableOpacity,
   ScrollView,
-  SafeAreaView,
   Dimensions,
   Share,
 } from 'react-native';
+import { SafeScreen } from '../ui/SafeScreen';
 import { Ionicons } from '@expo/vector-icons';
 import { Image as ExpoImage } from 'expo-image';
 import { Colors, Fonts, Spacing, Radius } from '../../constants/theme';
@@ -91,7 +91,7 @@ export function BossTowerModal({ visible, onClose, onNavigateToWorkouts }: BossT
 
   return (
     <Modal visible={visible} animationType="slide" transparent={false} onRequestClose={onClose}>
-      <SafeAreaView style={styles.safe}>
+      <SafeScreen style={styles.safe}>
         {/* ================= HEADER ANIME ================= */}
         <View style={styles.header}>
           <View style={styles.headerTitleContainer}>
@@ -237,7 +237,7 @@ export function BossTowerModal({ visible, onClose, onNavigateToWorkouts }: BossT
             ))
           )}
         </ScrollView>
-      </SafeAreaView>
+      </SafeScreen>
     </Modal>
   );
 }

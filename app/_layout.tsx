@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Platform, BackHandler, ToastAndroid } from 'react-native';
 import { NavigationBar } from 'expo-navigation-bar';
+import { SafeAreaProvider, initialWindowMetrics } from 'react-native-safe-area-context';
 import { useUserStore } from '../stores/userStore';
 import { useUpdateStore } from '../stores/updateStore';
 import { UpdateModal } from '../components/system/UpdateModal';
@@ -21,14 +22,14 @@ export default function RootLayout() {
     setupNotificationChannels();
   }, []);
 
-  // 1. Ocultar botones de navegación de Android (Immersive Sticky Mode)
+  // 1. Integración Edge-to-Edge de la barra de navegación de Android
   useEffect(() => {
     if (Platform.OS === 'android') {
       try {
         NavigationBar.setHidden(true);
         NavigationBar.setStyle('dark');
       } catch (e) {
-        console.warn('Error configurando NavigationBar:', e);
+        console.warn('Error configurando barra de sistema:', e);
       }
     }
   }, []);
@@ -86,10 +87,12 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: Colors.bg.primary }}>
-      <StatusBar style="light" />
-      <NavigationBar hidden={true} style="dark" />
-      <Stack screenOptions={{ headerShown: false }} />
-      <UpdateModal />
+      <SafeAreaProvider initialMetrics={initialWindowMetrics}>
+        <StatusBar style="light" />
+        <NavigationBar hidden={true} style="dark" />
+        <Stack screenOptions={{ headerShown: false }} />
+        <UpdateModal />
+      </SafeAreaProvider>
     </GestureHandlerRootView>
   );
 }

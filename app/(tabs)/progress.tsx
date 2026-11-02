@@ -9,7 +9,7 @@ import {
   ActivityIndicator,
   Animated,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeScreen } from '../../components/ui/SafeScreen';
 import { Ionicons } from '@expo/vector-icons';
 import { useUserStore } from '../../stores/userStore';
 import { useProgressStore } from '../../stores/progressStore';
@@ -83,9 +83,9 @@ export default function ProgressScreen() {
 
   if (!user) {
     return (
-      <SafeAreaView style={[styles.safe, { justifyContent: 'center', alignItems: 'center' }]}>
+      <SafeScreen style={[styles.safe, { justifyContent: 'center', alignItems: 'center' }]}>
         <ActivityIndicator size="large" color="#00F0FF" />
-      </SafeAreaView>
+      </SafeScreen>
     );
   }
 
@@ -119,7 +119,7 @@ export default function ProgressScreen() {
   const latestChange = weightLogs.length > 1 ? weightLogs[0].change || 0 : 0;
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeScreen style={styles.safe}>
       <ScrollView
         contentContainerStyle={styles.container}
         showsVerticalScrollIndicator={false}
@@ -583,7 +583,7 @@ export default function ProgressScreen() {
         visible={showWeightModal}
         onClose={() => setShowWeightModal(false)}
       />
-    </SafeAreaView>
+    </SafeScreen>
   );
 }
 

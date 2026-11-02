@@ -11,7 +11,7 @@ import {
   Easing,
   Platform,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeScreen } from '../ui/SafeScreen';
 import { Ionicons } from '@expo/vector-icons';
 import { CortexVoice } from '../../services/cortexVoice';
 import { Colors, Fonts, Spacing, Radius } from '../../constants/theme';
@@ -573,7 +573,7 @@ function PlanCircuitContent({
 
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeScreen style={styles.safe}>
       {/* ================= VISTA 1: OVERVIEW DEL CIRCUITO ================= */}
       {view === 'overview' && (
         <View style={styles.viewContainer}>
@@ -1376,7 +1376,7 @@ function PlanCircuitContent({
         totalTimeMinutes={duration}
         streakDays={user?.streak || 1}
       />
-    </SafeAreaView>
+    </SafeScreen>
   );
 }
 

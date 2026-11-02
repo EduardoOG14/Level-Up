@@ -14,7 +14,7 @@ import {
   Platform,
   Animated,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeScreen } from '../../components/ui/SafeScreen';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -153,9 +153,9 @@ export default function ProfileScreen() {
 
   if (!user) {
     return (
-      <SafeAreaView style={[styles.safe, { justifyContent: 'center', alignItems: 'center' }]}>
+      <SafeScreen style={[styles.safe, { justifyContent: 'center', alignItems: 'center' }]}>
         <ActivityIndicator size="large" color={Colors.brand.primary} />
-      </SafeAreaView>
+      </SafeScreen>
     );
   }
 
@@ -384,7 +384,7 @@ export default function ProfileScreen() {
     user.level * 25;
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeScreen style={styles.safe}>
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
         {/* Header Superior del Sistema */}
         <View style={styles.header}>
@@ -1371,7 +1371,7 @@ export default function ProfileScreen() {
         visible={showCortexKeyModal}
         onClose={() => setShowCortexKeyModal(false)}
       />
-    </SafeAreaView>
+    </SafeScreen>
   );
 }
 
