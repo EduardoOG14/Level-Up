@@ -450,58 +450,63 @@ export default function ProfileScreen() {
             <Text style={styles.titleLore}>{currentTitle.lore}</Text>
           </View>
 
-          {/* Botones de Ficha de Cazador & Salón de Logros */}
-          <View style={styles.heroActionButtonsRow}>
-            <TouchableOpacity
-              style={styles.heroActionBtn}
-              onPress={() => setShowHunterCardModal(true)}
-              activeOpacity={0.8}
-            >
-              <Ionicons name="card-outline" size={15} color="#00F0FF" />
-              <Text style={styles.heroActionBtnText}>Ficha de Cazador</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.heroActionBtn, isAllCompleted() && styles.heroActionBtnGold]}
-              onPress={() => setShowAchievementsModal(true)}
-              activeOpacity={0.8}
-            >
-              <Ionicons
-                name={isAllCompleted() ? 'trophy' : 'trophy-outline'}
-                size={15}
-                color={isAllCompleted() ? '#F59E0B' : '#00F0FF'}
-              />
-              <Text
-                style={[
-                  styles.heroActionBtnText,
-                  isAllCompleted() && { color: '#F59E0B' },
-                ]}
+          {/* Botones de Ficha de Cazador, Logros, Torre & Ejército de Sombras (Grid 2x2 para margen perfecto) */}
+          <View style={styles.heroActionGrid}>
+            <View style={styles.heroActionRow}>
+              <TouchableOpacity
+                style={styles.heroActionBtn}
+                onPress={() => setShowHunterCardModal(true)}
+                activeOpacity={0.8}
               >
-                Logros ({unlockedIds.length}/52)
-              </Text>
-            </TouchableOpacity>
+                <Ionicons name="card-outline" size={15} color="#00F0FF" />
+                <Text style={styles.heroActionBtnText} numberOfLines={1}>Ficha de Cazador</Text>
+              </TouchableOpacity>
 
-            <TouchableOpacity
-              style={[styles.heroActionBtn, styles.heroActionBtnPurple]}
-              onPress={() => setShowBossTowerModal(true)}
-              activeOpacity={0.8}
-            >
-              <Ionicons name="shield-half" size={15} color="#C084FC" />
-              <Text style={[styles.heroActionBtnText, { color: '#C084FC' }]}>
-                Torre ({defeatedBossIds.length}/22)
-              </Text>
-            </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.heroActionBtn, isAllCompleted() && styles.heroActionBtnGold]}
+                onPress={() => setShowAchievementsModal(true)}
+                activeOpacity={0.8}
+              >
+                <Ionicons
+                  name={isAllCompleted() ? 'trophy' : 'trophy-outline'}
+                  size={15}
+                  color={isAllCompleted() ? '#F59E0B' : '#00F0FF'}
+                />
+                <Text
+                  style={[
+                    styles.heroActionBtnText,
+                    isAllCompleted() && { color: '#F59E0B' },
+                  ]}
+                  numberOfLines={1}
+                >
+                  Logros ({unlockedIds.length}/52)
+                </Text>
+              </TouchableOpacity>
+            </View>
 
-            <TouchableOpacity
-              style={[styles.heroActionBtn, { borderColor: 'rgba(168, 85, 247, 0.4)', backgroundColor: 'rgba(168, 85, 247, 0.08)' }]}
-              onPress={() => setShowShadowArmyModal(true)}
-              activeOpacity={0.8}
-            >
-              <Ionicons name="skull" size={15} color="#C084FC" />
-              <Text style={[styles.heroActionBtnText, { color: '#C084FC' }]}>
-                Sombras ({soldiers.length})
-              </Text>
-            </TouchableOpacity>
+            <View style={styles.heroActionRow}>
+              <TouchableOpacity
+                style={[styles.heroActionBtn, styles.heroActionBtnPurple]}
+                onPress={() => setShowBossTowerModal(true)}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="shield-half" size={15} color="#C084FC" />
+                <Text style={[styles.heroActionBtnText, { color: '#C084FC' }]} numberOfLines={1}>
+                  Torre ({defeatedBossIds.length}/22)
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.heroActionBtn, { borderColor: 'rgba(168, 85, 247, 0.4)', backgroundColor: 'rgba(168, 85, 247, 0.08)' }]}
+                onPress={() => setShowShadowArmyModal(true)}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="skull" size={15} color="#C084FC" />
+                <Text style={[styles.heroActionBtnText, { color: '#C084FC' }]} numberOfLines={1}>
+                  Sombras ({soldiers.length})
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
 
@@ -1496,6 +1501,7 @@ const styles = StyleSheet.create({
     padding: 16,
     alignItems: 'center',
     gap: 6,
+    overflow: 'hidden',
   },
   avatarAuraRing: {
     padding: 5,
@@ -1536,19 +1542,26 @@ const styles = StyleSheet.create({
   },
   memberSince: { color: Colors.text.muted, fontSize: Fonts.sizes.xs },
 
-  heroActionButtonsRow: {
-    flexDirection: 'row',
-    gap: 10,
+  heroActionGrid: {
+    width: '100%',
+    gap: 8,
     marginTop: 10,
   },
+  heroActionRow: {
+    flexDirection: 'row',
+    gap: 8,
+    width: '100%',
+  },
   heroActionBtn: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: 6,
-    paddingVertical: 7,
-    paddingHorizontal: 12,
+    paddingVertical: 9,
+    paddingHorizontal: 8,
     borderRadius: Radius.full,
-    backgroundColor: 'rgba(0, 240, 255, 0.1)',
+    backgroundColor: 'rgba(0, 240, 255, 0.08)',
     borderWidth: 1,
     borderColor: 'rgba(0, 240, 255, 0.3)',
   },
