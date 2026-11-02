@@ -2,7 +2,7 @@
   "expo": {
     "name": "Level Up",
     "slug": "level-up",
-    "version": "1.0.10",
+    "version": "1.0.11",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
@@ -21,7 +21,7 @@
       },
       "predictiveBackGestureEnabled": false,
       "package": "com.levelup.app",
-      "versionCode": 14,
+      "versionCode": 15,
       "permissions": [
         "android.permission.REQUEST_INSTALL_PACKAGES",
         "android.permission.INTERNET",
