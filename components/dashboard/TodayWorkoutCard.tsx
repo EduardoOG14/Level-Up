@@ -27,14 +27,14 @@ export function TodayWorkoutCard({
         <View style={styles.cardHeaderRow}>
           <View style={styles.systemBadge}>
             <View style={styles.systemDot} />
-            <Text style={styles.systemBadgeText}>DIRECTIVA DEL SISTEMA</Text>
+            <Text style={styles.systemBadgeText}>SISTEMA CORTEX V3.4</Text>
           </View>
-          <Text style={styles.noPlanSub}>Sin plan activo</Text>
+          <Text style={styles.noPlanSub}>Directiva lista</Text>
         </View>
 
-        <Text style={styles.noPlanTitle}>Ningún Protocolo Táctico Asignado</Text>
+        <Text style={styles.noPlanTitle}>Directiva de Combate Computada</Text>
         <Text style={styles.noPlanDesc}>
-          Selecciona un plan de entrenamiento para recibir tu directiva diaria y mantener la racha de Cazador.
+          CORTEX ha preparado tu protocolo diario según tu rango y estado físico. Accede para iniciar tu misión obligatoria.
         </Text>
 
         <TouchableOpacity
@@ -42,8 +42,8 @@ export function TodayWorkoutCard({
           onPress={onExplorePlans}
           activeOpacity={0.8}
         >
-          <Ionicons name="compass-outline" size={16} color="#0A0A0F" />
-          <Text style={styles.selectPlanBtnText}>SELECCIONAR PLAN DE COMBATE</Text>
+          <Ionicons name="hardware-chip-outline" size={16} color="#0A0A0F" />
+          <Text style={styles.selectPlanBtnText}>ABRIR DIRECTIVA CORTEX</Text>
         </TouchableOpacity>
       </View>
     );

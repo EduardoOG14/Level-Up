@@ -10,6 +10,7 @@ import {
   Image,
   TextInput,
   Animated,
+  Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -29,13 +30,15 @@ import {
   resolveExerciseGuide,
   validateAndAdaptCircuit,
   adaptCircuitForUser,
-  searchExercises,
-  type DatasetExercise,
 } from '../../constants/exercises';
 import { ExerciseMedia } from '../../components/ui/ExerciseMedia';
-import { QuestDetailModal } from '../../components/gamification/QuestDetailModal';
 import type { Quest } from '../../components/gamification/QuestCard';
 import { type CircuitExercise, getPlanDayCircuit } from '../../constants/plans';
+import {
+  CortexDirective,
+  type CortexDirectiveResult,
+  type RecalibrationFocus,
+} from '../../services/cortexDirectiveService';
 import {
   getCurrentWeeklyBoss,
   isBossRaidAvailable,
@@ -67,24 +70,17 @@ const WORKOUT_TYPES = [
   { id: 'flexibility', label: 'Movilidad & Yoga', icon: 'body-outline', duration: 20, focus: 'Flexibilidad y Descanso' },
 ];
 
-const BODY_PARTS_FILTERS = [
-  { id: 'all', label: 'Todos' },
-  { id: 'chest', label: 'Pecho' },
-  { id: 'back', label: 'Espalda' },
-  { id: 'upper arms', label: 'Brazos' },
-  { id: 'upper legs', label: 'Piernas' },
-  { id: 'shoulders', label: 'Hombros' },
-  { id: 'waist', label: 'Core / Abdomen' },
-  { id: 'cardio', label: 'Cardio' },
-];
-
-const EQUIPMENT_FILTERS = [
-  { id: 'all', label: 'Todo el Equipo' },
-  { id: 'none', label: 'Sin Equipo' },
-  { id: 'dumbbells', label: 'Mancuernas' },
-  { id: 'barbell', label: 'Barra' },
-  { id: 'resistance_band', label: 'Bandas' },
-  { id: 'gym', label: 'Gimnasio' },
+const RECALIBRATION_OPTIONS: { id: RecalibrationFocus; label: string; desc: string; icon: any; emoji: string }[] = [
+  { id: 'push', label: 'Sobrecarga de Empuje', desc: 'Pectorales, Deltoides Anterior y Tríceps', icon: 'shield-outline', emoji: '🛡️' },
+  { id: 'pull', label: 'Tracción & Espalda', desc: 'Dorsales, Romboides y Bíceps', icon: 'barbell-outline', emoji: '🦅' },
+  { id: 'legs', label: 'Cimientos & Piernas', desc: 'Cuádriceps, Glúteos y Gemelos', icon: 'walk-outline', emoji: '🦵' },
+  { id: 'core', label: 'Blindaje Central', desc: 'Abdomen 360°, Transverso y Oblicuos', icon: 'locate-outline', emoji: '🛡️' },
+  { id: 'fullbody', label: 'Combate Full Body', desc: 'Estímulo global multiarticular', icon: 'flash-outline', emoji: '⚔️' },
+  { id: 'hiit', label: 'Incinerador Metabólico', desc: 'HIIT de alta cadencia y quema grasa', icon: 'flame-outline', emoji: '🔥' },
+  { id: 'calisthenics', label: 'Calistenia Pura', desc: 'Dominio de peso corporal sin equipamiento', icon: 'fitness-outline', emoji: '🤸' },
+  { id: 'express', label: 'Incursión Exprés (15 min)', desc: 'Máxima densidad en tiempo reducido', icon: 'time-outline', emoji: '⏱️' },
+  { id: 'joint_safe', label: 'Regeneración & Cero Impacto', desc: 'Articulaciones seguras y descompresión', icon: 'body-outline', emoji: '🧘' },
+  { id: 'auto', label: 'Restablecer a Cálculo CORTEX', desc: 'El Sistema decide según el día de la semana', icon: 'hardware-chip-outline', emoji: '🤖' },
 ];
 
 export default function WorkoutsScreen() {
@@ -131,23 +127,33 @@ export default function WorkoutsScreen() {
   const [pendingRestDayNumber, setPendingRestDayNumber] = useState<number>(1);
   const [pendingRestPlan, setPendingRestPlan] = useState<TrainingPlan | null>(null);
 
-  const [activeTab, setActiveTab] = useState<'plans' | 'custom' | 'arsenal'>('plans');
+  const [activeTab, setActiveTab] = useState<'plans' | 'custom'>('plans');
   const [selectedPlanCategory, setSelectedPlanCategory] = useState<PlanType | 'all'>('all');
   const [showAlarmModal, setShowAlarmModal] = useState(false);
   const [showAllDays, setShowAllDays] = useState(false);
   const [showCircuitModal, setShowCircuitModal] = useState(false);
   const [circuitDayNumber, setCircuitDayNumber] = useState(1);
 
-  // Arsenal / Catálogo de 1,324 Ejercicios
-  const [searchQuery, setSearchQuery] = useState('');
-  const [filterBodyPart, setFilterBodyPart] = useState('all');
-  const [filterEquipment, setFilterEquipment] = useState('all');
-  const [selectedCatalogExercise, setSelectedCatalogExercise] = useState<DatasetExercise | null>(null);
+  // Directivas de CORTEX & Recalibración
+  const [cortexDirectives, setCortexDirectives] = useState<CortexDirectiveResult | null>(null);
+  const [showRecalibrateModal, setShowRecalibrateModal] = useState(false);
+  const [isRecalibrating, setIsRecalibrating] = useState(false);
 
-  const filteredExercises = searchExercises(searchQuery, {
-    bodyPart: filterBodyPart !== 'all' ? filterBodyPart : undefined,
-    equipment: filterEquipment !== 'all' ? (filterEquipment as any) : undefined,
-  });
+  useEffect(() => {
+    let isMounted = true;
+    CortexDirective.getCortexDirectives(user).then((res) => {
+      if (isMounted) {
+        setCortexDirectives(res);
+        const current = getActivePlan();
+        if ((!current || current.type === 'daily') && res.dailyPlan && activePlanId !== res.dailyPlan.id) {
+          setActivePlan(res.dailyPlan.id);
+        }
+      }
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, [user]);
 
   // Custom AI Dungeon state
   const [selectedType, setSelectedType] = useState<string | null>('full');
@@ -458,9 +464,37 @@ export default function WorkoutsScreen() {
       setShowRestAdvisoryModal(true);
     } else {
       Alert.alert(
-        'Plan Activado ⚡',
-        `Has seleccionado "${plan.title}". CORTEX coordinará tu telemetría y alarmas.`
+        'Directiva Asignada ⚡',
+        `CORTEX ha establecido "${plan.title}" como tu protocolo de combate activo.`
       );
+    }
+  };
+
+  const handleSelectPlanAndStart = async (plan: TrainingPlan) => {
+    await setActivePlan(plan.id);
+    handleOpenCircuit(1, true);
+  };
+
+  const handleRecalibrate = async (focus: RecalibrationFocus) => {
+    setIsRecalibrating(true);
+    Haptics.medium();
+    SoundEffects.playLevelUp();
+    try {
+      const updated =
+        focus === 'auto'
+          ? await CortexDirective.resetToAutonomous(user)
+          : await CortexDirective.recalibrateDailyDirective(user, focus);
+      setCortexDirectives(updated);
+      await setActivePlan(updated.dailyPlan.id);
+      setShowRecalibrateModal(false);
+      Alert.alert(
+        'Directiva CORTEX Recalibrada ⚡',
+        `El Sistema ha establecido: "${updated.dailyPlan.title}".`
+      );
+    } catch (e) {
+      console.warn('Error recalibrando directiva:', e);
+    } finally {
+      setIsRecalibrating(false);
     }
   };
 
@@ -554,7 +588,7 @@ export default function WorkoutsScreen() {
         </Text>
       </View>
 
-      {/* Switcher Táctico de 3 Pestañas con Estética Anime */}
+      {/* Switcher Táctico de 2 Pestañas: CORTEX Directivas y Asalto a la Mazmorra */}
       <View style={styles.topTabs}>
         <TouchableOpacity
           style={[styles.topTabBtn, activeTab === 'plans' && styles.topTabBtnActive]}
@@ -562,12 +596,12 @@ export default function WorkoutsScreen() {
           activeOpacity={0.8}
         >
           <Ionicons
-            name="layers-outline"
-            size={15}
+            name="hardware-chip-outline"
+            size={16}
             color={activeTab === 'plans' ? '#0A0A0F' : '#94A3B8'}
           />
           <Text style={[styles.topTabText, activeTab === 'plans' && styles.topTabTextActive]}>
-            [ ⚔️ Programas ]
+            [ 🤖 CORTEX Directivas ]
           </Text>
         </TouchableOpacity>
 
@@ -578,26 +612,11 @@ export default function WorkoutsScreen() {
         >
           <Ionicons
             name="skull-outline"
-            size={15}
+            size={16}
             color={activeTab === 'custom' ? '#FFFFFF' : '#94A3B8'}
           />
           <Text style={[styles.topTabText, activeTab === 'custom' && styles.topTabTextActiveBoss]}>
-            [ 👑 Asalto / Mazmorra ]
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.topTabBtn, activeTab === 'arsenal' && styles.topTabBtnActive]}
-          onPress={() => setActiveTab('arsenal')}
-          activeOpacity={0.8}
-        >
-          <Ionicons
-            name="book-outline"
-            size={15}
-            color={activeTab === 'arsenal' ? '#0A0A0F' : '#94A3B8'}
-          />
-          <Text style={[styles.topTabText, activeTab === 'arsenal' && styles.topTabTextActive]}>
-            [ 📜 Arsenal (1,324) ]
+            [ 👑 Asalto / Torre ]
           </Text>
         </TouchableOpacity>
       </View>
@@ -637,8 +656,107 @@ export default function WorkoutsScreen() {
         {/* ================= PESTAÑA 1: PLANES CORTEX ================= */}
         {activeTab === 'plans' && (
           <>
-            {/* Tarjeta Hero: Plan Activo o Plan Conquistado */}
-            {activePlan ? (
+            {/* HERO CARD HOLOGRÁFICO: DIRECTIVA CORTEX DEL DÍA */}
+            {cortexDirectives && (
+              <View style={styles.cortexHeroBanner}>
+                {/* Cabecera del Sistema */}
+                <View style={styles.cortexHeroHeader}>
+                  <View style={styles.cortexSystemBadge}>
+                    <Animated.View style={[styles.headerLiveDot, { transform: [{ scale: pulseScale }] }]} />
+                    <Text style={styles.cortexSystemTag}>
+                      {cortexDirectives.systemTag}
+                    </Text>
+                  </View>
+                  <TouchableOpacity
+                    style={styles.cortexRecalibratePill}
+                    onPress={() => setShowRecalibrateModal(true)}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons name="options-outline" size={13} color="#00F0FF" />
+                    <Text style={styles.cortexRecalibratePillText}>Re-calibrar</Text>
+                  </TouchableOpacity>
+                </View>
+
+                {/* Título de la Directiva Prescrita */}
+                <View style={styles.cortexHeroTitleRow}>
+                  <View style={styles.cortexPlanEmojiBox}>
+                    <Text style={{ fontSize: 24 }}>{cortexDirectives.dailyPlan.emoji}</Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.cortexHeroTitle}>{cortexDirectives.dailyPlan.title}</Text>
+                    <Text style={styles.cortexHeroSubtitle}>
+                      {cortexDirectives.dailyPlan.subtitle} • {cortexDirectives.dailyPlan.durationLabel}
+                    </Text>
+                  </View>
+                  <View style={styles.questRewardPill}>
+                    <Text style={styles.questRewardPillText}>+{cortexDirectives.dailyPlan.totalXPReward} XP</Text>
+                  </View>
+                </View>
+
+                {/* Cuadro de Diagnóstico CORTEX (Speech Bubble del Sistema IA) */}
+                <View style={styles.cortexSpeechBox}>
+                  <View style={styles.cortexSpeechHeader}>
+                    <Ionicons name="hardware-chip" size={14} color="#00F0FF" />
+                    <Text style={styles.cortexSpeechSender}>CORTEX // DIAGNÓSTICO BIOMÉTRICO</Text>
+                    {cortexDirectives.isCustomRecalibrated && (
+                      <View style={styles.cortexOverriddenBadge}>
+                        <Text style={styles.cortexOverriddenText}>CALIBRACIÓN MANUAL</Text>
+                      </View>
+                    )}
+                  </View>
+                  <Text style={styles.cortexSpeechText}>
+                    "{cortexDirectives.cortexDiagnosis}"
+                  </Text>
+                </View>
+
+                {/* Cadena de Prescripción CORTEX: Diaria, Semanal, Mensual */}
+                <View style={styles.cortexPrescriptionChain}>
+                  <View style={styles.prescriptionStep}>
+                    <Text style={styles.prescriptionStepLabel}>HOY (DIARIA)</Text>
+                    <Text style={styles.prescriptionStepVal} numberOfLines={1}>
+                      {cortexDirectives.dailyPlan.title.replace('Directiva Diaria: ', '')}
+                    </Text>
+                  </View>
+                  <View style={styles.prescriptionDivider} />
+                  <TouchableOpacity
+                    style={styles.prescriptionStep}
+                    onPress={() => handleSelectPlan(cortexDirectives.weeklyPlan)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.prescriptionStepLabel}>SEMANA (PPL)</Text>
+                    <Text style={[styles.prescriptionStepVal, { color: '#C084FC' }]} numberOfLines={1}>
+                      {cortexDirectives.weeklyPlan.title.replace('Protocolo Semanal: ', '')}
+                    </Text>
+                  </TouchableOpacity>
+                  <View style={styles.prescriptionDivider} />
+                  <TouchableOpacity
+                    style={styles.prescriptionStep}
+                    onPress={() => handleSelectPlan(cortexDirectives.monthlyPlan)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.prescriptionStepLabel}>MES (MESOCICLO)</Text>
+                    <Text style={[styles.prescriptionStepVal, { color: '#F59E0B' }]} numberOfLines={1}>
+                      {cortexDirectives.monthlyPlan.title.replace('Mesociclo: ', '')}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+
+                {/* Botón de Lanzamiento de la Directiva */}
+                <TouchableOpacity
+                  style={styles.cortexLaunchBtn}
+                  onPress={() => {
+                    handleSelectPlanAndStart(cortexDirectives.dailyPlan);
+                  }}
+                  activeOpacity={0.85}
+                >
+                  <Ionicons name="flash" size={16} color="#07090E" />
+                  <Text style={styles.cortexLaunchBtnText}>EJECUTAR DIRECTIVA DE HOY ›</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {/* Tarjeta Hero: Plan Activo Multi-Día o Plan Conquistado */}
+            {activePlan && (activePlan.daysSchedule.length > 1 || isCurrentPlanCompleted()) && (
               isCurrentPlanCompleted() ? (
                 <View style={styles.conqueredPlanCard}>
                   {/* Header Conquistado */}
@@ -920,20 +1038,8 @@ export default function WorkoutsScreen() {
                   </View>
                 )}
               </Animated.View>
-              )
-            ) : (
-              <View style={styles.noPlanCard}>
-                <View style={styles.noPlanIconBox}>
-                  <Ionicons name="compass-outline" size={26} color="#00F0FF" />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.noPlanTitle}>[ SIN PROGRAMA ACTIVO ]</Text>
-                  <Text style={styles.noPlanDesc}>
-                    Elige un programa táctico abajo para calibrar tus entrenamientos y ganar XP de cazador.
-                  </Text>
-                </View>
-              </View>
-            )}
+            )
+          )}
 
             {/* Banner Teaser Asalto Semanal */}
             <TouchableOpacity
@@ -998,13 +1104,27 @@ export default function WorkoutsScreen() {
               </View>
             </TouchableOpacity>
 
+            {/* Cabecera de Biblioteca de Protocolos CORTEX */}
+            <View style={styles.catalogSectionHeader}>
+              <View style={styles.catalogTitleRow}>
+                <Ionicons name="layers" size={17} color="#00F0FF" />
+                <Text style={styles.catalogTitleText}>[ BIBLIOTECA DE PROTOCOLOS CORTEX ]</Text>
+                <View style={styles.catalogCountBadge}>
+                  <Text style={styles.catalogCountBadgeText}>30 RUTINAS</Text>
+                </View>
+              </View>
+              <Text style={styles.catalogSubtitleText}>
+                Protocolos tácticos autónomos: diarios, semanales y mesociclos mensuales
+              </Text>
+            </View>
+
             {/* Categorías de Filtro Rápidas con Estilo Anime */}
             <View style={styles.categoryPillsRow}>
               {[
-                { id: 'all', label: 'Todos' },
-                { id: 'daily', label: 'Diarios ⚡' },
-                { id: 'weekly', label: 'Semanales 🛡️' },
-                { id: 'monthly', label: 'Mensuales 👑' },
+                { id: 'all', label: `Todos (${TRAINING_PLANS.length})` },
+                { id: 'daily', label: `Diarios ⚡ (${TRAINING_PLANS.filter((p) => p.type === 'daily').length})` },
+                { id: 'weekly', label: `Semanales 🛡️ (${TRAINING_PLANS.filter((p) => p.type === 'weekly').length})` },
+                { id: 'monthly', label: `Mensuales 👑 (${TRAINING_PLANS.filter((p) => p.type === 'monthly').length})` },
               ].map((cat) => (
                 <TouchableOpacity
                   key={cat.id}
@@ -1515,121 +1635,7 @@ export default function WorkoutsScreen() {
           </View>
         )}
 
-        {/* ================= PESTAÑA 3: ARSENAL CORTEX (1,324 EJERCICIOS) ================= */}
-        {activeTab === 'arsenal' && (
-          <View style={styles.arsenalContainer}>
-            {/* Buscador en Vivo */}
-            <View style={styles.arsenalSearchBox}>
-              <Ionicons name="search" size={18} color="#00F0FF" />
-              <TextInput
-                style={styles.arsenalSearchInput}
-                placeholder="Buscar técnica, músculo o ejercicio..."
-                placeholderTextColor="#64748B"
-                value={searchQuery}
-                onChangeText={setSearchQuery}
-                autoCorrect={false}
-              />
-              {searchQuery.length > 0 && (
-                <TouchableOpacity onPress={() => setSearchQuery('')}>
-                  <Ionicons name="close-circle" size={18} color="#64748B" />
-                </TouchableOpacity>
-              )}
-            </View>
 
-            {/* Filtros por Grupo Muscular */}
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterChipScroll}>
-              {BODY_PARTS_FILTERS.map((f) => {
-                const isSelected = filterBodyPart === f.id;
-                return (
-                  <TouchableOpacity
-                    key={f.id}
-                    style={[styles.arsenalFilterChip, isSelected && styles.arsenalFilterChipActive]}
-                    onPress={() => setFilterBodyPart(f.id)}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={[styles.arsenalFilterChipText, isSelected && styles.arsenalFilterChipTextActive]}>
-                      {f.label}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
-
-            {/* Filtros por Equipamiento */}
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterChipScroll}>
-              {EQUIPMENT_FILTERS.map((f) => {
-                const isSelected = filterEquipment === f.id;
-                return (
-                  <TouchableOpacity
-                    key={f.id}
-                    style={[styles.arsenalFilterChip, isSelected && styles.arsenalFilterChipActive]}
-                    onPress={() => setFilterEquipment(f.id)}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={[styles.arsenalFilterChipText, isSelected && styles.arsenalFilterChipTextActive]}>
-                      {f.label}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
-
-            {/* Banner de Contador del Arsenal */}
-            <View style={styles.arsenalCountCard}>
-              <View style={styles.arsenalCountHeader}>
-                <Ionicons name="hardware-chip" size={16} color="#00F0FF" />
-                <Text style={styles.arsenalCountTitle}>
-                  [ {filteredExercises.length} TÉCNICAS BIOMECÁNICAS DISPONIBLES ]
-                </Text>
-              </View>
-              <Text style={styles.arsenalCountSubtitle}>
-                Streaming CDN con Caché Local en Disco • Animaciones GIF HD
-              </Text>
-            </View>
-
-            {/* Grid / Lista de Ejercicios en Formato QuestItem */}
-            <View style={styles.arsenalGrid}>
-              {filteredExercises.slice(0, 40).map((ex) => (
-                <TouchableOpacity
-                  key={ex.id}
-                  style={styles.arsenalCard}
-                  onPress={() => setSelectedCatalogExercise(ex)}
-                  activeOpacity={0.75}
-                >
-                  <ExerciseMedia
-                    gifUrl={ex.cdnGifUrl}
-                    rawGifUrl={ex.rawGifUrl}
-                    thumbnailUrl={ex.thumbnailUrl}
-                    style={styles.arsenalThumb}
-                    resizeMode="contain"
-                  />
-                  <View style={styles.arsenalCardContent}>
-                    <Text style={styles.arsenalCardTitle} numberOfLines={1}>
-                      {ex.name.charAt(0).toUpperCase() + ex.name.slice(1)}
-                    </Text>
-                    <Text style={styles.arsenalCardMuscle} numberOfLines={1}>
-                      🎯 {ex.target.toUpperCase()} • {ex.body_part}
-                    </Text>
-                    <View style={styles.arsenalBadgesRow}>
-                      <View style={styles.arsenalBadgeEq}>
-                        <Text style={styles.arsenalBadgeEqText}>{ex.equipment}</Text>
-                      </View>
-                      <View style={styles.arsenalBadgeRank}>
-                        <Text style={styles.arsenalBadgeRankText}>{ex.rank}</Text>
-                      </View>
-                    </View>
-                  </View>
-
-                  <View style={styles.questRewardPill}>
-                    <Text style={styles.questRewardPillText}>+{ex.xpReward} XP</Text>
-                  </View>
-
-                  <Ionicons name="chevron-forward" size={16} color="#64748B" />
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-        )}
       </ScrollView>
 
       {/* Modal de Alarma y Recordatorios */}
@@ -1697,37 +1703,53 @@ export default function WorkoutsScreen() {
         onClose={() => setShowRestAdvisoryModal(false)}
       />
 
-      {/* Modal Táctico para Explorar Ejercicio del Arsenal */}
-      {selectedCatalogExercise && (
-        <QuestDetailModal
-          quest={{
-            id: selectedCatalogExercise.id,
-            title: selectedCatalogExercise.name.charAt(0).toUpperCase() + selectedCatalogExercise.name.slice(1),
-            description: selectedCatalogExercise.steps[0] || 'Protocolo biomecánico CORTEX',
-            category: 'exercise',
-            icon: '⚔️',
-            xpReward: selectedCatalogExercise.xpReward,
-            completed: false,
-            exerciseName: selectedCatalogExercise.name,
-            targetMuscles: [selectedCatalogExercise.target, ...selectedCatalogExercise.secondary_muscles],
-            sets: selectedCatalogExercise.baseSets,
-            reps: selectedCatalogExercise.baseReps,
-            difficulty: selectedCatalogExercise.rank,
-            instructions: selectedCatalogExercise.steps,
-            cortexAdvice: `Directriz CORTEX: concéntrate en el control excéntrico y la técnica estricta de ${selectedCatalogExercise.target}.`,
-          }}
-          visible={!!selectedCatalogExercise}
-          onClose={() => setSelectedCatalogExercise(null)}
-          onComplete={async () => {
-            await addXP(selectedCatalogExercise.xpReward);
-            setSelectedCatalogExercise(null);
-            Alert.alert(
-              '¡Técnica Asimilada!',
-              `Has recibido +${selectedCatalogExercise.xpReward} XP por dominar este ejercicio biomecánico.`
-            );
-          }}
-        />
-      )}
+      {/* Modal de Re-Calibración de Directiva CORTEX */}
+      <Modal
+        visible={showRecalibrateModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowRecalibrateModal(false)}
+      >
+        <View style={styles.recalibrateModalOverlay}>
+          <View style={styles.recalibrateModalContent}>
+            <View style={styles.recalibrateModalHeader}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Ionicons name="hardware-chip" size={20} color="#00F0FF" />
+                <Text style={styles.recalibrateModalTitle}>[ RE-CALIBRAR DIRECTIVA CORTEX ]</Text>
+              </View>
+              <TouchableOpacity
+                onPress={() => setShowRecalibrateModal(false)}
+                style={styles.recalibrateCloseBtn}
+              >
+                <Ionicons name="close" size={20} color="#94A3B8" />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={styles.recalibrateModalDesc}>
+              ¿Deseas enfocar un estímulo biomecánico específico hoy? CORTEX reconfigurará la directiva diaria según tu selección.
+            </Text>
+
+            <ScrollView style={styles.recalibrateList} showsVerticalScrollIndicator={false}>
+              {RECALIBRATION_OPTIONS.map((opt) => (
+                <TouchableOpacity
+                  key={opt.id}
+                  style={styles.recalibrateOptionCard}
+                  onPress={() => handleRecalibrate(opt.id)}
+                  disabled={isRecalibrating}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.recalibrateOptionEmoji}>{opt.emoji}</Text>
+                  <View style={{ flex: 1, gap: 2 }}>
+                    <Text style={styles.recalibrateOptionLabel}>{opt.label}</Text>
+                    <Text style={styles.recalibrateOptionDesc}>{opt.desc}</Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={16} color="#00F0FF" />
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
       {/* Modal del Ejército de Sombras */}
       <ShadowArmyModal
         visible={showShadowArmyModal}
@@ -3123,137 +3145,262 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
 
-  // Arsenal (1,324 Ejercicios)
-  arsenalContainer: {
+  // ================= CORTEX HERO BANNER & PRESCRIPCIÓN =================
+  cortexHeroBanner: {
+    backgroundColor: '#0A0F1D',
+    borderRadius: 20,
+    padding: 16,
+    borderWidth: 1.5,
+    borderColor: 'rgba(0, 240, 255, 0.4)',
     gap: 12,
+    shadowColor: '#00F0FF',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    elevation: 4,
   },
-  arsenalSearchBox: {
+  cortexHeroHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#0F121E',
-    borderRadius: 16,
-    borderWidth: 1.5,
-    borderColor: 'rgba(0, 240, 255, 0.25)',
-    paddingHorizontal: 14,
-    height: 46,
-    gap: 10,
+    justifyContent: 'space-between',
   },
-  arsenalSearchInput: {
-    flex: 1,
-    color: '#F8FAFC',
-    fontSize: 13,
-  },
-  filterChipScroll: {
-    flexDirection: 'row',
-    gap: 7,
-    paddingVertical: 2,
-  },
-  arsenalFilterChip: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: Radius.full,
-    backgroundColor: '#0F121E',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
-  },
-  arsenalFilterChipActive: {
-    backgroundColor: 'rgba(0, 240, 255, 0.15)',
-    borderColor: '#00F0FF',
-  },
-  arsenalFilterChipText: {
-    color: '#64748B',
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  arsenalFilterChipTextActive: {
-    color: '#00F0FF',
-    fontWeight: 'bold',
-  },
-  arsenalCountCard: {
-    backgroundColor: '#0F121E',
-    borderRadius: 14,
-    padding: 10,
-    borderWidth: 1,
-    borderColor: 'rgba(0, 240, 255, 0.2)',
-    gap: 2,
-  },
-  arsenalCountHeader: {
+  cortexSystemBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
   },
-  arsenalCountTitle: {
+  cortexSystemTag: {
     color: '#00F0FF',
+    fontSize: 10.5,
+    fontWeight: 'bold',
+    letterSpacing: 0.8,
+  },
+  cortexRecalibratePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(0, 240, 255, 0.1)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 240, 255, 0.3)',
+  },
+  cortexRecalibratePillText: {
+    color: '#00F0FF',
+    fontSize: 10,
+    fontWeight: 'bold',
+  },
+  cortexHeroTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  cortexPlanEmojiBox: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: 'rgba(0, 240, 255, 0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(0, 240, 255, 0.25)',
+  },
+  cortexHeroTitle: {
+    color: '#F8FAFC',
+    fontSize: 15,
+    fontWeight: 'bold',
+  },
+  cortexHeroSubtitle: {
+    color: '#94A3B8',
     fontSize: 11,
+    marginTop: 2,
+  },
+  cortexSpeechBox: {
+    backgroundColor: 'rgba(15, 23, 42, 0.85)',
+    borderRadius: 12,
+    padding: 10,
+    borderLeftWidth: 3,
+    borderLeftColor: '#00F0FF',
+    gap: 4,
+  },
+  cortexSpeechHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  cortexSpeechSender: {
+    color: '#00F0FF',
+    fontSize: 9.5,
+    fontWeight: 'bold',
+    letterSpacing: 0.6,
+  },
+  cortexOverriddenBadge: {
+    backgroundColor: 'rgba(245, 158, 11, 0.15)',
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    borderRadius: 4,
+    borderWidth: 0.5,
+    borderColor: 'rgba(245, 158, 11, 0.4)',
+  },
+  cortexOverriddenText: {
+    color: '#F59E0B',
+    fontSize: 8,
+    fontWeight: 'bold',
+  },
+  cortexSpeechText: {
+    color: '#E2E8F0',
+    fontSize: 11.5,
+    fontStyle: 'italic',
+    lineHeight: 16,
+  },
+  cortexPrescriptionChain: {
+    flexDirection: 'row',
+    backgroundColor: '#070A14',
+    borderRadius: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.06)',
+    alignItems: 'center',
+  },
+  prescriptionStep: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 2,
+    paddingHorizontal: 4,
+  },
+  prescriptionStepLabel: {
+    color: '#64748B',
+    fontSize: 8,
     fontWeight: 'bold',
     letterSpacing: 0.5,
   },
-  arsenalCountSubtitle: {
-    color: '#64748B',
+  prescriptionStepVal: {
+    color: '#00F0FF',
     fontSize: 10,
+    fontWeight: 'bold',
+    textAlign: 'center',
   },
-  arsenalGrid: {
-    gap: 8,
+  prescriptionDivider: {
+    width: 1,
+    height: 18,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
   },
-  arsenalCard: {
+  cortexLaunchBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#0F121E',
-    borderRadius: 16,
-    padding: 10,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.06)',
-    gap: 10,
-  },
-  arsenalThumb: {
-    width: 54,
-    height: 54,
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#00F0FF',
+    paddingVertical: 11,
     borderRadius: 12,
-    backgroundColor: '#050711',
-    borderWidth: 1,
-    borderColor: 'rgba(0, 240, 255, 0.2)',
+    shadowColor: '#00F0FF',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 4,
   },
-  arsenalCardContent: {
-    flex: 1,
+  cortexLaunchBtnText: {
+    color: '#07090E',
+    fontSize: 12,
+    fontWeight: '900',
+    letterSpacing: 0.6,
+  },
+
+  // Cabecera Catálogo de Protocolos
+  catalogSectionHeader: {
+    marginTop: 6,
     gap: 2,
   },
-  arsenalCardTitle: {
-    color: '#F8FAFC',
-    fontSize: 13,
-    fontWeight: 'bold',
-  },
-  arsenalCardMuscle: {
-    color: '#94A3B8',
-    fontSize: 10.5,
-  },
-  arsenalBadgesRow: {
+  catalogTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    marginTop: 2,
+    gap: 7,
   },
-  arsenalBadgeEq: {
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    paddingHorizontal: 5,
-    paddingVertical: 1.5,
-    borderRadius: 4,
+  catalogTitleText: {
+    color: '#00F0FF',
+    fontSize: 12.5,
+    fontWeight: 'bold',
+    letterSpacing: 0.7,
   },
-  arsenalBadgeEqText: {
-    color: '#CBD5E1',
-    fontSize: 9,
-    textTransform: 'capitalize',
-  },
-  arsenalBadgeRank: {
-    backgroundColor: 'rgba(0, 240, 255, 0.1)',
-    paddingHorizontal: 5,
-    paddingVertical: 1.5,
-    borderRadius: 4,
-    borderWidth: 0.5,
+  catalogCountBadge: {
+    backgroundColor: 'rgba(0, 240, 255, 0.12)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+    borderWidth: 0.8,
     borderColor: 'rgba(0, 240, 255, 0.3)',
   },
-  arsenalBadgeRankText: {
+  catalogCountBadgeText: {
     color: '#00F0FF',
     fontSize: 9,
     fontWeight: 'bold',
+  },
+  catalogSubtitleText: {
+    color: '#94A3B8',
+    fontSize: 10.5,
+  },
+
+  // Modal de Re-Calibración
+  recalibrateModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.85)',
+    justifyContent: 'flex-end',
+  },
+  recalibrateModalContent: {
+    backgroundColor: '#0B0E17',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    borderTopWidth: 1.5,
+    borderTopColor: '#00F0FF',
+    maxHeight: '80%',
+    padding: 18,
+    gap: 12,
+  },
+  recalibrateModalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  recalibrateModalTitle: {
+    color: '#00F0FF',
+    fontSize: 13,
+    fontWeight: 'bold',
+    letterSpacing: 0.8,
+  },
+  recalibrateCloseBtn: {
+    padding: 4,
+  },
+  recalibrateModalDesc: {
+    color: '#94A3B8',
+    fontSize: 11.5,
+    lineHeight: 16,
+  },
+  recalibrateList: {
+    maxHeight: 400,
+  },
+  recalibrateOptionCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: '#0F1322',
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    marginBottom: 8,
+  },
+  recalibrateOptionEmoji: {
+    fontSize: 22,
+  },
+  recalibrateOptionLabel: {
+    color: '#F8FAFC',
+    fontSize: 12.5,
+    fontWeight: 'bold',
+  },
+  recalibrateOptionDesc: {
+    color: '#64748B',
+    fontSize: 10.5,
   },
 });

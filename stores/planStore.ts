@@ -10,6 +10,7 @@ import {
 import { useUserStore } from './userStore';
 import { useProgressStore } from './progressStore';
 import { StreakEngine, getLocalDateKey } from '../services/streakEngine';
+import { CortexDirective } from '../services/cortexDirectiveService';
 
 export interface AlarmSettings {
   enabled: boolean;
@@ -48,6 +49,7 @@ interface PlanStore {
   resetCurrentPlanProgress: () => Promise<void>;
   updateAlarmSettings: (settings: Partial<AlarmSettings>) => Promise<void>;
   getActivePlan: () => TrainingPlan | undefined;
+  syncCortexDailyDirective: (user: any) => Promise<void>;
   resetPlan: () => Promise<void>;
 }
 
@@ -146,6 +148,18 @@ export const usePlanStore = create<PlanStore>((set, get) => ({
 
     if (alarmSettings.enabled && plan) {
       await scheduleWorkoutAlarm(alarmSettings.hour, alarmSettings.minute, plan.title, alarmSettings.days);
+    }
+  },
+
+  syncCortexDailyDirective: async (user: any) => {
+    const { activePlanId } = get();
+    const currentPlan = TRAINING_PLANS.find((p) => p.id === activePlanId);
+    // Si el plan activo es de tipo 'daily' o no existe, alinear con la directiva computada por CORTEX
+    if (!currentPlan || currentPlan.type === 'daily') {
+      const directives = await CortexDirective.getCortexDirectives(user);
+      if (directives.dailyPlan && directives.dailyPlan.id !== activePlanId) {
+        await get().setActivePlan(directives.dailyPlan.id);
+      }
     }
   },
 

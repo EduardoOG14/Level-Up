@@ -222,7 +222,10 @@ export default function HomeScreen() {
       refreshStreakStatus();
       checkDailyChestStatus();
       setIsSoundMuted(!SoundEffects.getIsEnabled());
-    }, [refreshStreakStatus, checkDailyChestStatus])
+      if (user) {
+        usePlanStore.getState().syncCortexDailyDirective(user);
+      }
+    }, [refreshStreakStatus, checkDailyChestStatus, user])
   );
 
   // Pulso continuo del Sistema Solo Leveling
