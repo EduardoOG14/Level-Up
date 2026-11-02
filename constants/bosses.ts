@@ -21,7 +21,7 @@ export const WEEKLY_BOSSES: WeeklyBoss[] = [
   // =========================================================================
   {
     id: 'boss_kasaka',
-    imageUrl: 'https://images.unsplash.com/photo-1531384370597-8590413be50a?w=600&auto=format&fit=crop&q=80',
+    imageUrl: 'https://th.wallhaven.cc/lg/5y/5y6l69.jpg',
     kanjiTitle: '青毒の巨蛇',
     rankBadge: 'RANGO D',
     name: 'Kasaka de Colmillos Azules',
@@ -95,7 +95,7 @@ export const WEEKLY_BOSSES: WeeklyBoss[] = [
   // =========================================================================
   {
     id: 'boss_cerberus',
-    imageUrl: 'https://images.unsplash.com/photo-1546182990-dffeafbe841d?w=600&auto=format&fit=crop&q=80',
+    imageUrl: 'https://th.wallhaven.cc/lg/po/powmmj.jpg',
     kanjiTitle: '地獄の門番',
     rankBadge: 'RANGO D+',
     name: 'Cerbero, Guardián del Inframundo',
@@ -169,7 +169,7 @@ export const WEEKLY_BOSSES: WeeklyBoss[] = [
   // =========================================================================
   {
     id: 'boss_centipede',
-    imageUrl: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=600&auto=format&fit=crop&q=80',
+    imageUrl: 'https://th.wallhaven.cc/lg/5y/5yp6e3.jpg',
     kanjiTitle: '毒沼の百足',
     rankBadge: 'RANGO C-',
     name: 'Ciempiés Gigante del Pantano Venenoso',
@@ -243,7 +243,7 @@ export const WEEKLY_BOSSES: WeeklyBoss[] = [
   // =========================================================================
   {
     id: 'boss_igris',
-    imageUrl: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=600&auto=format&fit=crop&q=80',
+    imageUrl: 'https://th.wallhaven.cc/lg/85/85wegy.jpg',
     kanjiTitle: '血赤の騎士',
     rankBadge: 'RANGO C+',
     name: 'Igris, el Comandante Carmesí',
@@ -317,7 +317,7 @@ export const WEEKLY_BOSSES: WeeklyBoss[] = [
   // =========================================================================
   {
     id: 'boss_baruka',
-    imageUrl: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&auto=format&fit=crop&q=80',
+    imageUrl: 'https://th.wallhaven.cc/lg/q2/q2gy5l.jpg',
     kanjiTitle: '白霜の君主',
     rankBadge: 'RANGO B-',
     name: 'Baruka, el Señor de la Escarcha',
@@ -391,7 +391,7 @@ export const WEEKLY_BOSSES: WeeklyBoss[] = [
   // =========================================================================
   {
     id: 'boss_metus',
-    imageUrl: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=600&auto=format&fit=crop&q=80',
+    imageUrl: 'https://th.wallhaven.cc/lg/qr/qr6xg7.jpg',
     kanjiTitle: '死霊の魔導士',
     rankBadge: 'RANGO B',
     name: 'Metus, el Nigromante del Abismo',
@@ -465,7 +465,7 @@ export const WEEKLY_BOSSES: WeeklyBoss[] = [
   // =========================================================================
   {
     id: 'boss_iron',
-    imageUrl: 'https://images.unsplash.com/photo-1563089145-599997674d42?w=600&auto=format&fit=crop&q=80',
+    imageUrl: 'https://th.wallhaven.cc/lg/6l/6lpmrx.jpg',
     kanjiTitle: '鋼鉄の戦士',
     rankBadge: 'RANGO B+',
     name: 'Kim Chul de Hierro, el Guerrero Blindado',
@@ -539,7 +539,7 @@ export const WEEKLY_BOSSES: WeeklyBoss[] = [
   // =========================================================================
   {
     id: 'boss_kargalgan',
-    imageUrl: 'https://images.unsplash.com/photo-1514539079130-25950c84af65?w=600&auto=format&fit=crop&q=80',
+    imageUrl: 'https://th.wallhaven.cc/lg/1q/1q2po3.jpg',
     kanjiTitle: '大呪術師',
     rankBadge: 'RANGO A-',
     name: 'Kargalgan, el Gran Hechicero Orco',
@@ -613,7 +613,7 @@ export const WEEKLY_BOSSES: WeeklyBoss[] = [
   // =========================================================================
   {
     id: 'boss_tusk',
-    imageUrl: 'https://images.unsplash.com/photo-1549465220-1a8b9238cd48?w=600&auto=format&fit=crop&q=80',
+    imageUrl: 'https://th.wallhaven.cc/lg/z8/z8x36v.jpg',
     kanjiTitle: '紅蓮の巨像',
     rankBadge: 'RANGO A',
     name: 'Tusk, el Coloso Alto Orco de Fuego',
@@ -687,7 +687,7 @@ export const WEEKLY_BOSSES: WeeklyBoss[] = [
   // =========================================================================
   {
     id: 'boss_vulcan',
-    imageUrl: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&auto=format&fit=crop&q=80',
+    imageUrl: 'https://th.wallhaven.cc/lg/4d/4dg2lg.jpg',
     kanjiTitle: '強欲の悪魔',
     rankBadge: 'RANGO A+',
     name: 'Vulcan de la Codicia',
@@ -761,7 +761,7 @@ export const WEEKLY_BOSSES: WeeklyBoss[] = [
   // =========================================================================
   {
     id: 'boss_baran',
-    imageUrl: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=600&auto=format&fit=crop&q=80',
+    imageUrl: 'https://th.wallhaven.cc/lg/qd/qdk5r7.jpg',
     kanjiTitle: '白炎の雷帝',
     rankBadge: 'RANGO S-',
     name: 'Baran, el Monarca de las Llamas Blancas',
@@ -835,7 +835,7 @@ export const WEEKLY_BOSSES: WeeklyBoss[] = [
   // =========================================================================
   {
     id: 'boss_queen_ant',
-    imageUrl: 'https://images.unsplash.com/photo-1550684848-fac1c5b4e853?w=600&auto=format&fit=crop&q=80',
+    imageUrl: 'https://th.wallhaven.cc/lg/yx/yxz91x.jpg',
     kanjiTitle: '蟻の女王',
     rankBadge: 'RANGO S',
     name: 'Reina Hormiga de la Isla Jeju',
@@ -909,7 +909,7 @@ export const WEEKLY_BOSSES: WeeklyBoss[] = [
   // =========================================================================
   {
     id: 'boss_beru',
-    imageUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&auto=format&fit=crop&q=80',
+    imageUrl: 'https://th.wallhaven.cc/lg/x8/x8jpp3.jpg',
     kanjiTitle: '捕食の王',
     rankBadge: 'RANGO S+',
     name: 'Beru, el Rey Hormiga Depredador',
@@ -983,7 +983,7 @@ export const WEEKLY_BOSSES: WeeklyBoss[] = [
   // =========================================================================
   {
     id: 'boss_goto_ryuji',
-    imageUrl: 'https://images.unsplash.com/photo-1589254065878-42c9da997008?w=600&auto=format&fit=crop&q=80',
+    imageUrl: 'https://th.wallhaven.cc/lg/21/21996g.jpg',
     kanjiTitle: '抜刀の鬼神',
     rankBadge: 'RANGO NACIONAL',
     name: 'Goto Ryuji, la Espada Fantasma Imperial',
@@ -1057,7 +1057,7 @@ export const WEEKLY_BOSSES: WeeklyBoss[] = [
   // =========================================================================
   {
     id: 'boss_kamish',
-    imageUrl: 'https://images.unsplash.com/photo-1577493340887-b7bdef05080f?w=600&auto=format&fit=crop&q=80',
+    imageUrl: 'https://th.wallhaven.cc/lg/d8/d825ym.jpg',
     kanjiTitle: '破滅の竜王',
     rankBadge: 'CATÁSTROFE',
     name: 'Kamish, la Mayor Calamidad de la Humanidad',
@@ -1131,7 +1131,7 @@ export const WEEKLY_BOSSES: WeeklyBoss[] = [
   // =========================================================================
   {
     id: 'boss_sillad',
-    imageUrl: 'https://images.unsplash.com/photo-1483921020237-2ff51e8e4b22?w=600&auto=format&fit=crop&q=80',
+    imageUrl: 'https://th.wallhaven.cc/lg/1q/1qo3r3.jpg',
     kanjiTitle: '白雪の君主',
     rankBadge: 'MONARCA',
     name: 'Sillad, el Monarca de la Escarcha',
@@ -1205,7 +1205,7 @@ export const WEEKLY_BOSSES: WeeklyBoss[] = [
   // =========================================================================
   {
     id: 'boss_rakan',
-    imageUrl: 'https://images.unsplash.com/photo-1564865878688-9a244444042a?w=600&auto=format&fit=crop&q=80',
+    imageUrl: 'https://th.wallhaven.cc/lg/l8/l8mk62.jpg',
     kanjiTitle: '百獣の王',
     rankBadge: 'MONARCA',
     name: 'Rakan, el Monarca de las Bestias',
@@ -1279,7 +1279,7 @@ export const WEEKLY_BOSSES: WeeklyBoss[] = [
   // =========================================================================
   {
     id: 'boss_yogumunt',
-    imageUrl: 'https://images.unsplash.com/photo-1507499739999-097706ad8914?w=600&auto=format&fit=crop&q=80',
+    imageUrl: 'https://th.wallhaven.cc/lg/1q/1qljo1.jpg',
     kanjiTitle: '変容の君主',
     rankBadge: 'MONARCA',
     name: 'Yogumunt, el Monarca Espectral',
@@ -1353,7 +1353,7 @@ export const WEEKLY_BOSSES: WeeklyBoss[] = [
   // =========================================================================
   {
     id: 'boss_tarnak',
-    imageUrl: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&auto=format&fit=crop&q=80',
+    imageUrl: 'https://th.wallhaven.cc/lg/rq/rqe1w1.jpg',
     kanjiTitle: '鉄躯の君主',
     rankBadge: 'MONARCA',
     name: 'Tarnak, el Monarca de Hierro',
@@ -1427,7 +1427,7 @@ export const WEEKLY_BOSSES: WeeklyBoss[] = [
   // =========================================================================
   {
     id: 'boss_bellion',
-    imageUrl: 'https://images.unsplash.com/photo-1579783902614-a3fb3927b675?w=600&auto=format&fit=crop&q=80',
+    imageUrl: 'https://th.wallhaven.cc/lg/3q/3q75y6.jpg',
     kanjiTitle: '影の総軍団長',
     rankBadge: 'GRAN MARISCAL',
     name: 'Bellion, Gran Mariscal de las Sombras',
@@ -1501,7 +1501,7 @@ export const WEEKLY_BOSSES: WeeklyBoss[] = [
   // =========================================================================
   {
     id: 'boss_antares',
-    imageUrl: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=600&auto=format&fit=crop&q=80',
+    imageUrl: 'https://th.wallhaven.cc/lg/7j/7j9opy.jpg',
     kanjiTitle: '破滅の君主',
     rankBadge: 'MONARCA SUPREMO',
     name: 'Antares, el Monarca de la Destrucción',
@@ -1575,7 +1575,7 @@ export const WEEKLY_BOSSES: WeeklyBoss[] = [
   // =========================================================================
   {
     id: 'boss_shadow_monarch',
-    imageUrl: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&auto=format&fit=crop&q=80',
+    imageUrl: 'https://th.wallhaven.cc/lg/1p/1p7w6w.jpg',
     kanjiTitle: '影の君主',
     rankBadge: 'TRASCENDENTE',
     name: 'El Monarca de las Sombras',
