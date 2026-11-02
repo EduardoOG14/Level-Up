@@ -990,6 +990,7 @@ export default function HomeScreen() {
           routineTitle={streakStatus?.completedRoutineTitle}
           isPenaltyActive={isPenaltyActive}
           shieldsCount={streakStatus?.shieldsAvailable}
+          isRestDay={streakStatus?.isRestDay}
           onPressQuests={() => {}}
           onPressRoutine={() => {
             if (currentActivePlan) {

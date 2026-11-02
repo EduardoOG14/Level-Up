@@ -163,6 +163,7 @@ export default function WorkoutsScreen() {
   const [showDungeonModal, setShowDungeonModal] = useState(false);
   const [showRecoveryModal, setShowRecoveryModal] = useState(false);
   const [bossCountdown, setBossCountdown] = useState<BossCountdown>(getBossCountdown());
+  const [bossCombatEnv, setBossCombatEnv] = useState<'home' | 'gym'>(user?.bossCombatLocation || 'home');
   const currentWeekKey = getCurrentWeekKey();
   const [showKeyModal, setShowKeyModal] = useState(false);
   const [showShadowArmyModal, setShowShadowArmyModal] = useState(false);
@@ -431,10 +432,11 @@ export default function WorkoutsScreen() {
       );
       return;
     }
+    const effectiveEquipment = bossCombatEnv === 'home' ? ['none'] : (user?.equipment || ['gym']);
     const userProfile = {
       fitnessLevel: user?.fitnessLevel || 'beginner',
       level: user?.level || 1,
-      equipment: user?.equipment || ['none'],
+      equipment: effectiveEquipment,
       weight: user?.weight,
       height: user?.height,
       kneeFriendly: user?.kneeFriendly,
@@ -442,7 +444,7 @@ export default function WorkoutsScreen() {
     const validatedCircuit = adaptCircuitForUser(currentBoss.circuit, userProfile);
     const bossData: CustomCircuitData = {
       title: `Asalto Semanal: ${currentBoss.name}`,
-      subtitle: `${currentBoss.title} • HP: ${currentBoss.totalHP}`,
+      subtitle: `${currentBoss.title} • ${bossCombatEnv === 'home' ? '🏠 Modo En Casa (Calistenia)' : '🏟️ Modo Gimnasio'}`,
       duration: 30,
       xpReward: currentBoss.xpReward,
       circuit: validatedCircuit,
@@ -1396,6 +1398,70 @@ export default function WorkoutsScreen() {
                   </Text>
                 </View>
               )}
+
+              {/* Selector Táctico de Entorno de Asalto (Casa vs Gimnasio) */}
+              <View style={styles.bossLocationContainer}>
+                <View style={styles.bossLocationHeaderRow}>
+                  <Ionicons name="location-outline" size={13} color="#00F0FF" />
+                  <Text style={styles.bossLocationHeaderTitle}>
+                    ENTORNO DE ASALTO • {bossCombatEnv === 'home' ? '🏠 CALISTENIA EN CASA' : '🏟️ MODO GIMNASIO'}
+                  </Text>
+                </View>
+
+                <View style={styles.bossLocationSwitcherRow}>
+                  <TouchableOpacity
+                    style={[
+                      styles.bossLocationTab,
+                      bossCombatEnv === 'home' && styles.bossLocationTabActive,
+                    ]}
+                    onPress={async () => {
+                      setBossCombatEnv('home');
+                      Haptics.light();
+                      await useUserStore.getState().updateProfile({ bossCombatLocation: 'home' });
+                    }}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={styles.bossLocationTabEmoji}>🏠</Text>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.bossLocationTabText, bossCombatEnv === 'home' && styles.bossLocationTabTextActive]}>
+                        En Casa (Sin Equipo)
+                      </Text>
+                      <Text style={styles.bossLocationTabSub}>
+                        Gimnasio cerrado fines de semana
+                      </Text>
+                    </View>
+                    {bossCombatEnv === 'home' && (
+                      <Ionicons name="checkmark-circle" size={15} color="#00F0FF" />
+                    )}
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[
+                      styles.bossLocationTab,
+                      bossCombatEnv === 'gym' && styles.bossLocationTabActive,
+                    ]}
+                    onPress={async () => {
+                      setBossCombatEnv('gym');
+                      Haptics.light();
+                      await useUserStore.getState().updateProfile({ bossCombatLocation: 'gym' });
+                    }}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={styles.bossLocationTabEmoji}>🏟️</Text>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.bossLocationTabText, bossCombatEnv === 'gym' && styles.bossLocationTabTextActive]}>
+                        Modo Gimnasio
+                      </Text>
+                      <Text style={styles.bossLocationTabSub}>
+                        Barras, poleas y mancuernas
+                      </Text>
+                    </View>
+                    {bossCombatEnv === 'gym' && (
+                      <Ionicons name="checkmark-circle" size={15} color="#00F0FF" />
+                    )}
+                  </TouchableOpacity>
+                </View>
+              </View>
 
               <View style={styles.bossStationsRow}>
                 <Ionicons name="shield-checkmark-outline" size={14} color="#00F0FF" />
@@ -3011,6 +3077,63 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '600',
     lineHeight: 16,
+  },
+
+  // Selector de Entorno de Combate de Asalto (Casa vs Gym)
+  bossLocationContainer: {
+    backgroundColor: '#0F121E',
+    borderRadius: 14,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 240, 255, 0.25)',
+    gap: 8,
+  },
+  bossLocationHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  bossLocationHeaderTitle: {
+    color: '#00F0FF',
+    fontSize: 10,
+    fontWeight: 'bold',
+    letterSpacing: 0.8,
+  },
+  bossLocationSwitcherRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  bossLocationTab: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    borderRadius: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+  },
+  bossLocationTabActive: {
+    backgroundColor: 'rgba(0, 240, 255, 0.12)',
+    borderColor: '#00F0FF',
+  },
+  bossLocationTabEmoji: {
+    fontSize: 16,
+  },
+  bossLocationTabText: {
+    color: '#94A3B8',
+    fontSize: 11,
+    fontWeight: 'bold',
+  },
+  bossLocationTabTextActive: {
+    color: '#F8FAFC',
+  },
+  bossLocationTabSub: {
+    color: '#64748B',
+    fontSize: 8.5,
+    marginTop: 1,
   },
   bossDefeatedButton: {
     flexDirection: 'row',

@@ -33,6 +33,8 @@ export interface UserProfile {
   gender?: 'male' | 'female' | 'other';
   kneeFriendly?: boolean; // Modo Protección Articular (Rodillas Seguras / Bajo Impacto)
   injuries?: string[];
+  workoutDays?: number[]; // Días de entrenamiento programados (0=Dom, 1=Lun... 6=Sáb; default: [1,2,3,4,5])
+  bossCombatLocation?: 'home' | 'gym'; // Ubicación de combate para asalto de fin de semana
   // Progress
   workoutsCompleted: number;
   questsCompleted: number;
@@ -217,6 +219,8 @@ export async function createUserProfile(uid?: string, data?: Partial<UserProfile
       data?.kneeFriendly ??
       (getUserBMI(data?.weight, data?.height) >= 27.5 || (data?.weight || 0) >= 90),
     injuries: data?.injuries || [],
+    workoutDays: data?.workoutDays || [1, 2, 3, 4, 5],
+    bossCombatLocation: data?.bossCombatLocation || 'home',
     workoutsCompleted: 0,
     questsCompleted: 0,
     createdAt: new Date().toISOString(),

@@ -732,7 +732,81 @@ export default function ProfileScreen() {
           )}
         </View>
 
-        {/* 4. NEXO SMARTWATCH BIOMÉTRICO */}
+        {/* 4. CALENDARIO DE ENTRENAMIENTO & BLINDAJE DE RACHA */}
+        <View style={styles.cyberCard}>
+          <View style={styles.cyberCardHeader}>
+            <View style={styles.cyberCardTitleRow}>
+              <View style={styles.questsTitleIconBox}>
+                <Ionicons name="calendar-outline" size={17} color="#00F0FF" />
+              </View>
+              <Text style={styles.cyberCardTitle}>[ DÍAS DE COMBATE & RACHA ]</Text>
+            </View>
+            <View style={styles.restProtectionBadge}>
+              <Ionicons name="shield-checkmark" size={12} color="#10B981" />
+              <Text style={styles.restProtectionBadgeText}>PROTEGIDA</Text>
+            </View>
+          </View>
+
+          <Text style={styles.scheduleDescText}>
+            Selecciona los días que entrenas. Los días no seleccionados (incluyendo fines de semana con gym cerrado) son <Text style={{ color: '#00F0FF', fontWeight: 'bold' }}>Días de Descanso Táctico</Text> donde tu racha está 100% blindada y jamás se cortará.
+          </Text>
+
+          {/* Selector de los 7 Días */}
+          <View style={styles.weekDaysGrid}>
+            {[
+              { day: 1, label: 'Lun' },
+              { day: 2, label: 'Mar' },
+              { day: 3, label: 'Mié' },
+              { day: 4, label: 'Jue' },
+              { day: 5, label: 'Vie' },
+              { day: 6, label: 'Sáb' },
+              { day: 0, label: 'Dom' },
+            ].map(({ day, label }) => {
+              const activeWorkoutDays = user.workoutDays || [1, 2, 3, 4, 5];
+              const isSelected = activeWorkoutDays.includes(day);
+
+              return (
+                <TouchableOpacity
+                  key={day}
+                  style={[styles.weekDayPill, isSelected ? styles.weekDayPillActive : styles.weekDayPillRest]}
+                  onPress={async () => {
+                    let nextDays: number[];
+                    if (isSelected) {
+                      if (activeWorkoutDays.length <= 1) {
+                        Alert.alert('Mínimo Requerido ⚔️', 'Debes mantener al menos 1 día de entrenamiento activo.');
+                        return;
+                      }
+                      nextDays = activeWorkoutDays.filter((d) => d !== day);
+                    } else {
+                      nextDays = [...activeWorkoutDays, day].sort((a, b) => a - b);
+                    }
+                    Haptics.light();
+                    await updateProfile({ workoutDays: nextDays });
+                  }}
+                  activeOpacity={0.75}
+                >
+                  <Text style={[styles.weekDayPillLabel, isSelected ? styles.weekDayPillLabelActive : styles.weekDayPillLabelRest]}>
+                    {label}
+                  </Text>
+                  <Text style={[styles.weekDayPillStatus, isSelected ? styles.weekDayPillStatusActive : styles.weekDayPillStatusRest]}>
+                    {isSelected ? '⚔️' : '🛡️'}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+          <View style={styles.scheduleFooterRow}>
+            <Text style={styles.scheduleFooterActiveText}>
+              ⚔️ {(user.workoutDays || [1, 2, 3, 4, 5]).length} Días de Entrenamiento
+            </Text>
+            <Text style={styles.scheduleFooterRestText}>
+              🛡️ {7 - (user.workoutDays || [1, 2, 3, 4, 5]).length} Días de Descanso Protegido
+            </Text>
+          </View>
+        </View>
+
+        {/* 5. NEXO SMARTWATCH BIOMÉTRICO */}
         <View style={styles.cyberCard}>
           <View style={styles.cyberCardHeader}>
             <View style={styles.cyberCardTitleRow}>
@@ -1859,6 +1933,87 @@ const styles = StyleSheet.create({
     fontSize: 13.5,
     fontWeight: 'bold',
     letterSpacing: 0.8,
+  },
+  restProtectionBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(16, 185, 129, 0.15)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(16, 185, 129, 0.35)',
+  },
+  restProtectionBadgeText: {
+    color: '#10B981',
+    fontSize: 9.5,
+    fontWeight: 'bold',
+    letterSpacing: 0.6,
+  },
+  scheduleDescText: {
+    color: '#94A3B8',
+    fontSize: 11.5,
+    lineHeight: 16,
+  },
+  weekDaysGrid: {
+    flexDirection: 'row',
+    gap: 6,
+    justifyContent: 'space-between',
+    marginVertical: 4,
+  },
+  weekDayPill: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  weekDayPillActive: {
+    backgroundColor: 'rgba(0, 240, 255, 0.15)',
+    borderColor: '#00F0FF',
+  },
+  weekDayPillRest: {
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+  },
+  weekDayPillLabel: {
+    fontSize: 11,
+    fontWeight: 'bold',
+  },
+  weekDayPillLabelActive: {
+    color: '#00F0FF',
+  },
+  weekDayPillLabelRest: {
+    color: '#64748B',
+  },
+  weekDayPillStatus: {
+    fontSize: 11,
+    marginTop: 2,
+  },
+  weekDayPillStatusActive: {
+    color: '#00F0FF',
+  },
+  weekDayPillStatusRest: {
+    color: '#94A3B8',
+  },
+  scheduleFooterRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.05)',
+  },
+  scheduleFooterActiveText: {
+    color: '#38BDF8',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  scheduleFooterRestText: {
+    color: '#10B981',
+    fontSize: 11,
+    fontWeight: '700',
   },
 
   avatar: {

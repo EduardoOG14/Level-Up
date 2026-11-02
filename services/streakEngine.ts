@@ -17,6 +17,8 @@ export interface DailyStreakStatus {
   currentStreak: number;
   shieldsAvailable?: number;
   wasShieldActivatedToday?: boolean;
+  isRestDay?: boolean;
+  restDayLabel?: string;
 }
 
 export interface StreakAdvanceResult {
@@ -43,6 +45,25 @@ export const getLocalDateKey = (date: Date = new Date()): string => {
 export const getYesterdayDateKey = (): string => {
   const d = new Date(Date.now() - 86400000);
   return getLocalDateKey(d);
+};
+
+/**
+ * Obtiene la clave de fecha del último día de entrenamiento obligatorio programado anterior a fromDate.
+ * Ignora días de descanso y fines de semana no seleccionados para que nunca corten la racha del Cazador.
+ */
+export const getLastRequiredWorkoutDateKey = (
+  workoutDays: number[] = [1, 2, 3, 4, 5],
+  fromDate: Date = new Date()
+): string => {
+  const d = new Date(fromDate);
+  for (let i = 1; i <= 14; i++) {
+    d.setDate(d.getDate() - 1);
+    const day = d.getDay();
+    if (workoutDays.includes(day)) {
+      return getLocalDateKey(d);
+    }
+  }
+  return getYesterdayDateKey();
 };
 
 class StreakEngineService {
@@ -107,6 +128,9 @@ class StreakEngineService {
 
       const isFullDayCompleted = areQuestsCompleted && isRoutineCompleted;
       const shieldsAvailable = await StreakShieldService.getShieldCount(uid);
+      const workoutDays = currentUser?.workoutDays || [1, 2, 3, 4, 5];
+      const todayDayOfWeek = new Date().getDay();
+      const isRestDay = !workoutDays.includes(todayDayOfWeek);
 
       return {
         dateKey: todayKey,
@@ -118,6 +142,8 @@ class StreakEngineService {
         isStreakAdvancedToday,
         currentStreak,
         shieldsAvailable,
+        isRestDay,
+        restDayLabel: isRestDay ? 'Descanso Táctico (Racha Protegida 🛡️)' : undefined,
       };
     } catch (err) {
       console.warn('Error leyendo estado diario de racha:', err);
@@ -130,6 +156,7 @@ class StreakEngineService {
         isStreakAdvancedToday: false,
         currentStreak,
         shieldsAvailable: 1,
+        isRestDay: false,
       };
     }
   }
@@ -232,12 +259,19 @@ class StreakEngineService {
     }
 
     // Calcular la nueva racha:
-    // Si su último día completado fue ayer -> streak + 1
+    // Si su último día completado fue ayer o el último día obligatorio (ej. viernes si hoy es lunes) -> streak + 1
     // Si fue hace más tiempo (o es el primer día) -> streak = 1
     const lastActive = currentUser.lastActiveDate;
+    const workoutDays = currentUser.workoutDays || [1, 2, 3, 4, 5];
+    const lastRequiredKey = getLastRequiredWorkoutDateKey(workoutDays, new Date());
     let newStreak = 1;
 
-    if (lastActive === yesterdayKey || lastActive === new Date(Date.now() - 86400000).toDateString()) {
+    if (
+      lastActive === yesterdayKey ||
+      lastActive === lastRequiredKey ||
+      (lastActive && lastActive >= lastRequiredKey) ||
+      lastActive === new Date(Date.now() - 86400000).toDateString()
+    ) {
       newStreak = (currentUser.streak || 0) + 1;
     } else if (currentUser.streak === 0) {
       newStreak = 1;
@@ -292,13 +326,28 @@ class StreakEngineService {
 
     if (!currentUser || currentUser.streak <= 0) return;
 
+    const workoutDays = currentUser.workoutDays || [1, 2, 3, 4, 5];
+    const todayDayOfWeek = new Date().getDay();
+    const isTodayRestDay = !workoutDays.includes(todayDayOfWeek);
+    const lastRequiredKey = getLastRequiredWorkoutDateKey(workoutDays, new Date());
+
     const lastActive = currentUser.lastActiveDate;
-    // Si estuvo activo hoy o ayer, su racha está protegida y en juego para hoy
+    // Si estuvo activo hoy, ayer, o en el último día de entrenamiento obligatorio programado:
     const isActiveRecently =
       lastActive === todayKey ||
       lastActive === yesterdayKey ||
+      lastActive === lastRequiredKey ||
+      (lastActive && lastActive >= lastRequiredKey) ||
       lastActive === new Date().toDateString() ||
       lastActive === new Date(Date.now() - 86400000).toDateString();
+
+    if (isActiveRecently) return;
+
+    // Si hoy es día de descanso programado (fin de semana o día no seleccionado),
+    // la racha NO se corta
+    if (isTodayRestDay && lastActive && lastActive >= lastRequiredKey) {
+      return;
+    }
 
     if (!isActiveRecently) {
       // Intentar consumir un Escudo Protector de Racha del Sistema

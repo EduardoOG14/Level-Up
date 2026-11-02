@@ -12,6 +12,7 @@ interface StreakStatusCardProps {
   routineTitle?: string;
   isPenaltyActive?: boolean;
   shieldsCount?: number;
+  isRestDay?: boolean;
   onPressQuests?: () => void;
   onPressRoutine?: () => void;
 }
@@ -25,6 +26,7 @@ export function StreakStatusCard({
   routineTitle,
   isPenaltyActive = false,
   shieldsCount,
+  isRestDay = false,
   onPressQuests,
   onPressRoutine,
 }: StreakStatusCardProps) {
@@ -32,32 +34,40 @@ export function StreakStatusCard({
   const completedCriteriaCount = (areQuestsCompleted ? 1 : 0) + (isRoutineCompleted ? 1 : 0);
 
   return (
-    <View style={[styles.card, isFullDay ? styles.cardComplete : isPenaltyActive ? styles.cardPenalty : styles.cardPending]}>
+    <View style={[styles.card, isFullDay ? styles.cardComplete : isPenaltyActive ? styles.cardPenalty : isRestDay ? styles.cardRestDay : styles.cardPending]}>
       {/* Header con Estado de Racha */}
       <View style={styles.headerRow}>
-        <View style={styles.streakBadge}>
-          <Text style={styles.streakFlame}>🔥</Text>
-          <Text style={styles.streakNumber}>{streak}</Text>
-          <Text style={styles.streakUnit}>{streak === 1 ? 'DÍA' : 'DÍAS'}</Text>
+        <View style={[styles.streakBadge, isRestDay && !isFullDay && styles.streakBadgeRestDay]}>
+          <Text style={styles.streakFlame}>{isRestDay && !isFullDay ? '🛡️' : '🔥'}</Text>
+          <Text style={[styles.streakNumber, isRestDay && !isFullDay && styles.streakNumberRestDay]}>{streak}</Text>
+          <Text style={[styles.streakUnit, isRestDay && !isFullDay && styles.streakUnitRestDay]}>{streak === 1 ? 'DÍA' : 'DÍAS'}</Text>
         </View>
 
         <View style={styles.headerTexts}>
           <View style={styles.systemTagRow}>
-            <View style={[styles.statusDot, isFullDay ? styles.statusDotGreen : styles.statusDotOrange]} />
-            <Text style={styles.systemTag}>
-              {isFullDay ? 'RACHA BLINDADA Y AVANZADA' : isPenaltyActive ? '⚠️ ZONA DE CASTIGO ACTIVA' : 'PACTO DE RACHA DIARIO'}
+            <View style={[styles.statusDot, isFullDay ? styles.statusDotGreen : isPenaltyActive ? styles.statusDotOrange : isRestDay ? styles.statusDotCyan : styles.statusDotOrange]} />
+            <Text style={[styles.systemTag, isRestDay && !isFullDay && { color: '#00F0FF' }]}>
+              {isFullDay
+                ? 'RACHA BLINDADA Y AVANZADA'
+                : isPenaltyActive
+                ? '⚠️ ZONA DE CASTIGO ACTIVA'
+                : isRestDay
+                ? '🛡️ DESCANSO TÁCTICO • RACHA PROTEGIDA'
+                : 'PACTO DE RACHA DIARIO'}
             </Text>
           </View>
           <Text style={styles.hintText}>
             {isFullDay
               ? 'Has cumplido el 100% de las misiones y la rutina de hoy.'
+              : isRestDay
+              ? 'Hoy es tu día de recuperación programado. Tu racha está protegida y no se cortará. Entrenar hoy sumará como bonus.'
               : 'La racha se mantiene SÓLO si completas las misiones y tu rutina.'}
           </Text>
         </View>
 
-        <View style={[styles.criteriaPill, isFullDay ? styles.criteriaPillGreen : styles.criteriaPillNeutral]}>
-          <Text style={[styles.criteriaPillText, isFullDay ? styles.criteriaPillTextGreen : styles.criteriaPillTextNeutral]}>
-            {completedCriteriaCount}/2
+        <View style={[styles.criteriaPill, isFullDay ? styles.criteriaPillGreen : isRestDay ? styles.criteriaPillCyan : styles.criteriaPillNeutral]}>
+          <Text style={[styles.criteriaPillText, isFullDay ? styles.criteriaPillTextGreen : isRestDay ? styles.criteriaPillTextCyan : styles.criteriaPillTextNeutral]}>
+            {isFullDay ? '2/2' : isRestDay ? 'SEGURO 🛡️' : `${completedCriteriaCount}/2`}
           </Text>
         </View>
       </View>
@@ -156,6 +166,10 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(239, 68, 68, 0.5)',
     backgroundColor: 'rgba(239, 68, 68, 0.06)',
   },
+  cardRestDay: {
+    borderColor: 'rgba(0, 240, 255, 0.35)',
+    backgroundColor: 'rgba(0, 240, 255, 0.04)',
+  },
   cardPending: {
     borderColor: 'rgba(255, 255, 255, 0.08)',
   },
@@ -176,6 +190,10 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
     minWidth: 50,
   },
+  streakBadgeRestDay: {
+    backgroundColor: 'rgba(0, 240, 255, 0.1)',
+    borderColor: 'rgba(0, 240, 255, 0.35)',
+  },
   streakFlame: {
     fontSize: 14,
   },
@@ -185,11 +203,17 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     lineHeight: 18,
   },
+  streakNumberRestDay: {
+    color: '#00F0FF',
+  },
   streakUnit: {
     color: '#F87171',
     fontSize: 8,
     fontWeight: '800',
     letterSpacing: 0.5,
+  },
+  streakUnitRestDay: {
+    color: '#38BDF8',
   },
   headerTexts: {
     flex: 1,
@@ -210,6 +234,9 @@ const styles = StyleSheet.create({
   },
   statusDotOrange: {
     backgroundColor: '#F59E0B',
+  },
+  statusDotCyan: {
+    backgroundColor: '#00F0FF',
   },
   systemTag: {
     color: '#94A3B8',
@@ -232,6 +259,10 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(16, 185, 129, 0.15)',
     borderColor: '#10B981',
   },
+  criteriaPillCyan: {
+    backgroundColor: 'rgba(0, 240, 255, 0.15)',
+    borderColor: '#00F0FF',
+  },
   criteriaPillNeutral: {
     backgroundColor: 'rgba(255, 255, 255, 0.05)',
     borderColor: 'rgba(255, 255, 255, 0.1)',
@@ -242,6 +273,9 @@ const styles = StyleSheet.create({
   },
   criteriaPillTextGreen: {
     color: '#10B981',
+  },
+  criteriaPillTextCyan: {
+    color: '#00F0FF',
   },
   criteriaPillTextNeutral: {
     color: '#94A3B8',
