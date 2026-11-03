@@ -1120,8 +1120,12 @@ export default function WorkoutsScreen() {
               </Text>
             </View>
 
-            {/* Categorías de Filtro Rápidas con Estilo Anime */}
-            <View style={styles.categoryPillsRow}>
+            {/* Categorías de Filtro Rápidas con Scroll Horizontal */}
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.categoryPillsScroll}
+            >
               {[
                 { id: 'all', label: `Todos (${TRAINING_PLANS.length})` },
                 { id: 'daily', label: `Diarios ⚡ (${TRAINING_PLANS.filter((p) => p.type === 'daily').length})` },
@@ -1147,7 +1151,7 @@ export default function WorkoutsScreen() {
                   </Text>
                 </TouchableOpacity>
               ))}
-            </View>
+            </ScrollView>
 
             {/* Catálogo de Programas Tácticos (Estilo Dungeon Gates) */}
             <View style={styles.plansList}>
@@ -2449,9 +2453,10 @@ const styles = StyleSheet.create({
   },
 
   // Filtros
-  categoryPillsRow: {
+  categoryPillsScroll: {
     flexDirection: 'row',
-    gap: 6,
+    gap: 8,
+    paddingVertical: 3,
   },
   catPill: {
     backgroundColor: '#0F121E',

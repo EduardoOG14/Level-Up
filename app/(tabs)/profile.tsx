@@ -449,68 +449,86 @@ export default function ProfileScreen() {
             </View>
             <Text style={styles.titleLore}>{currentTitle.lore}</Text>
           </View>
+        </View>
 
-          {/* Botones de Ficha de Cazador, Logros, Torre & Ejército de Sombras (Grid 2x2 para margen perfecto) */}
-          <View style={styles.heroActionGrid}>
-            <View style={styles.heroActionRow}>
-              <TouchableOpacity
-                style={styles.heroActionBtn}
-                onPress={() => setShowHunterCardModal(true)}
-                activeOpacity={0.8}
-              >
-                <Ionicons name="card-outline" size={15} color="#00F0FF" />
-                <Text style={styles.heroActionBtnText} numberOfLines={1}>Ficha de Cazador</Text>
-              </TouchableOpacity>
+        {/* 2. CONSOLA DE ACCESO TÁCTICO DEL CAZADOR (Credenciales y Salones) */}
+        <View style={styles.tacticalDeckContainer}>
+          {/* Botón Principal: Ficha & Credencial Oficial de Cazador */}
+          <TouchableOpacity
+            style={styles.hunterCardHeroBtn}
+            onPress={() => setShowHunterCardModal(true)}
+            activeOpacity={0.8}
+          >
+            <View style={styles.hunterCardIconCircle}>
+              <Ionicons name="card" size={20} color="#00F0FF" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <View style={styles.hunterCardTagRow}>
+                <Text style={styles.hunterCardTitle}>FICHA DE CAZADOR</Text>
+                <View style={styles.hunterCardRankTag}>
+                  <Text style={styles.hunterCardRankTagText}>RANGO {rank.key}</Text>
+                </View>
+              </View>
+              <Text style={styles.hunterCardSubtitle}>Licencia oficial, telemetría biométrica y QR ›</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color="#00F0FF" />
+          </TouchableOpacity>
 
-              <TouchableOpacity
-                style={[styles.heroActionBtn, isAllCompleted() && styles.heroActionBtnGold]}
-                onPress={() => setShowAchievementsModal(true)}
-                activeOpacity={0.8}
+          {/* Fila de Módulos: Salón de Logros & Ejército de Sombras */}
+          <View style={styles.tacticalSplitRow}>
+            {/* Salón de Logros */}
+            <TouchableOpacity
+              style={[styles.tacticalTile, isAllCompleted() && styles.tacticalTileGold]}
+              onPress={() => setShowAchievementsModal(true)}
+              activeOpacity={0.8}
+            >
+              <View
+                style={[
+                  styles.tacticalTileIconBox,
+                  { backgroundColor: isAllCompleted() ? 'rgba(245, 158, 11, 0.15)' : 'rgba(0, 240, 255, 0.1)' },
+                ]}
               >
                 <Ionicons
                   name={isAllCompleted() ? 'trophy' : 'trophy-outline'}
-                  size={15}
+                  size={18}
                   color={isAllCompleted() ? '#F59E0B' : '#00F0FF'}
                 />
+              </View>
+              <View style={{ flex: 1 }}>
                 <Text
-                  style={[
-                    styles.heroActionBtnText,
-                    isAllCompleted() && { color: '#F59E0B' },
-                  ]}
+                  style={[styles.tacticalTileTitle, isAllCompleted() && { color: '#F59E0B' }]}
                   numberOfLines={1}
                 >
-                  Logros ({unlockedIds.length}/52)
+                  Salón de Logros
                 </Text>
-              </TouchableOpacity>
-            </View>
+                <Text style={styles.tacticalTileValue}>
+                  {unlockedIds.length} / 52 <Text style={styles.tacticalTileSub}>desbloqueados</Text>
+                </Text>
+              </View>
+            </TouchableOpacity>
 
-            <View style={styles.heroActionRow}>
-              <TouchableOpacity
-                style={[styles.heroActionBtn, styles.heroActionBtnPurple]}
-                onPress={() => setShowBossTowerModal(true)}
-                activeOpacity={0.8}
-              >
-                <Ionicons name="shield-half" size={15} color="#C084FC" />
-                <Text style={[styles.heroActionBtnText, { color: '#C084FC' }]} numberOfLines={1}>
-                  Torre ({defeatedBossIds.length}/22)
+            {/* Ejército de Sombras */}
+            <TouchableOpacity
+              style={[styles.tacticalTile, styles.tacticalTilePurple]}
+              onPress={() => setShowShadowArmyModal(true)}
+              activeOpacity={0.8}
+            >
+              <View style={[styles.tacticalTileIconBox, { backgroundColor: 'rgba(168, 85, 247, 0.15)' }]}>
+                <Ionicons name="skull" size={18} color="#C084FC" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.tacticalTileTitle, { color: '#C084FC' }]} numberOfLines={1}>
+                  Ejército Sombrío
                 </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.heroActionBtn, { borderColor: 'rgba(168, 85, 247, 0.4)', backgroundColor: 'rgba(168, 85, 247, 0.08)' }]}
-                onPress={() => setShowShadowArmyModal(true)}
-                activeOpacity={0.8}
-              >
-                <Ionicons name="skull" size={15} color="#C084FC" />
-                <Text style={[styles.heroActionBtnText, { color: '#C084FC' }]} numberOfLines={1}>
-                  Sombras ({soldiers.length})
+                <Text style={styles.tacticalTileValue}>
+                  {soldiers.length} <Text style={styles.tacticalTileSub}>sombras</Text>
                 </Text>
-              </TouchableOpacity>
-            </View>
+              </View>
+            </TouchableOpacity>
           </View>
         </View>
 
-        {/* TARJETA DESTACADA: LA TORRE DE LOS 22 MONARCAS */}
+        {/* 3. TARJETA DESTACADA: LA TORRE DE LOS 22 MONARCAS */}
         <TouchableOpacity
           style={styles.bossTowerBannerCard}
           onPress={() => setShowBossTowerModal(true)}
@@ -1542,41 +1560,110 @@ const styles = StyleSheet.create({
   },
   memberSince: { color: Colors.text.muted, fontSize: Fonts.sizes.xs },
 
-  heroActionGrid: {
+  // Consola de Acceso Táctico del Cazador
+  tacticalDeckContainer: {
     width: '100%',
-    gap: 8,
-    marginTop: 10,
+    gap: 10,
   },
-  heroActionRow: {
-    flexDirection: 'row',
-    gap: 8,
-    width: '100%',
-  },
-  heroActionBtn: {
-    flex: 1,
+  hunterCardHeroBtn: {
+    backgroundColor: '#0F121E',
+    borderWidth: 1.5,
+    borderColor: 'rgba(0, 240, 255, 0.35)',
+    borderRadius: Radius.lg,
+    padding: 13,
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 12,
+    shadowColor: '#00F0FF',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  hunterCardIconCircle: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: 'rgba(0, 240, 255, 0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(0, 240, 255, 0.4)',
+    alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 9,
-    paddingHorizontal: 8,
-    borderRadius: Radius.full,
-    backgroundColor: 'rgba(0, 240, 255, 0.08)',
+  },
+  hunterCardTagRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  hunterCardTitle: {
+    color: '#F8FAFC',
+    fontSize: 13,
+    fontWeight: 'bold',
+    letterSpacing: 0.5,
+  },
+  hunterCardRankTag: {
+    backgroundColor: 'rgba(0, 240, 255, 0.15)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: Radius.sm,
     borderWidth: 1,
     borderColor: 'rgba(0, 240, 255, 0.3)',
   },
-  heroActionBtnGold: {
-    backgroundColor: 'rgba(245, 158, 11, 0.12)',
+  hunterCardRankTagText: {
+    color: '#00F0FF',
+    fontSize: 9.5,
+    fontWeight: '800',
+  },
+  hunterCardSubtitle: {
+    color: '#94A3B8',
+    fontSize: 11,
+    marginTop: 2,
+  },
+  tacticalSplitRow: {
+    flexDirection: 'row',
+    gap: 10,
+    width: '100%',
+  },
+  tacticalTile: {
+    flex: 1,
+    backgroundColor: '#0D0E1A',
+    borderWidth: 1.5,
+    borderColor: 'rgba(0, 240, 255, 0.25)',
+    borderRadius: Radius.lg,
+    padding: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    minHeight: 58,
+  },
+  tacticalTileGold: {
     borderColor: 'rgba(245, 158, 11, 0.4)',
   },
-  heroActionBtnPurple: {
-    backgroundColor: 'rgba(168, 85, 247, 0.14)',
-    borderColor: 'rgba(168, 85, 247, 0.4)',
+  tacticalTilePurple: {
+    borderColor: 'rgba(168, 85, 247, 0.35)',
   },
-  heroActionBtnText: {
+  tacticalTileIconBox: {
+    width: 34,
+    height: 34,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tacticalTileTitle: {
     color: '#00F0FF',
+    fontSize: 11.5,
+    fontWeight: '700',
+  },
+  tacticalTileValue: {
+    color: '#F8FAFC',
     fontSize: 12,
     fontWeight: 'bold',
+    marginTop: 1,
+  },
+  tacticalTileSub: {
+    color: '#64748B',
+    fontSize: 9.5,
+    fontWeight: '500',
   },
 
   // Tarjeta de la Torre de los 22 Monarcas
