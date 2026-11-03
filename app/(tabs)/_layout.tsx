@@ -1,5 +1,5 @@
 import React from 'react';
-import { Platform, View, StyleSheet } from 'react-native';
+import { Platform } from 'react-native';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -7,7 +7,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 export default function TabsLayout() {
   const insets = useSafeAreaInsets();
   const isIOS = Platform.OS === 'ios';
-  const bottomInset = Math.max(insets.bottom, isIOS ? 26 : 14);
+  const bottomPadding = isIOS ? 28 : Math.max(insets.bottom, 10);
+  const barHeight = isIOS ? 88 : (64 + Math.max(insets.bottom, 6));
 
   return (
     <Tabs
@@ -18,9 +19,9 @@ export default function TabsLayout() {
           backgroundColor: '#0A0C16',
           borderTopColor: 'rgba(0, 240, 255, 0.25)',
           borderTopWidth: 1.5,
-          height: 56 + bottomInset,
-          paddingBottom: bottomInset,
-          paddingTop: 7,
+          height: barHeight,
+          paddingBottom: bottomPadding,
+          paddingTop: 8,
           elevation: 12,
           shadowColor: '#00F0FF',
           shadowOffset: { width: 0, height: -2 },
@@ -38,7 +39,7 @@ export default function TabsLayout() {
           fontSize: 11,
           fontWeight: '700',
           letterSpacing: 0.3,
-          marginTop: 3,
+          marginTop: 2,
         },
       }}
       backBehavior="history"
@@ -48,13 +49,11 @@ export default function TabsLayout() {
         options={{
           title: 'Inicio',
           tabBarIcon: ({ focused }) => (
-            <View style={focused ? styles.activeIconContainer : styles.iconContainer}>
-              <Ionicons
-                name={focused ? 'home' : 'home-outline'}
-                size={22}
-                color={focused ? '#00F0FF' : '#64748B'}
-              />
-            </View>
+            <Ionicons
+              name={focused ? 'home' : 'home-outline'}
+              size={24}
+              color={focused ? '#00F0FF' : '#64748B'}
+            />
           ),
         }}
       />
@@ -63,13 +62,11 @@ export default function TabsLayout() {
         options={{
           title: 'Calabozos',
           tabBarIcon: ({ focused }) => (
-            <View style={focused ? styles.activeIconContainer : styles.iconContainer}>
-              <Ionicons
-                name={focused ? 'barbell' : 'barbell-outline'}
-                size={22}
-                color={focused ? '#00F0FF' : '#64748B'}
-              />
-            </View>
+            <Ionicons
+              name={focused ? 'barbell' : 'barbell-outline'}
+              size={24}
+              color={focused ? '#00F0FF' : '#64748B'}
+            />
           ),
         }}
       />
@@ -78,13 +75,11 @@ export default function TabsLayout() {
         options={{
           title: 'CORTEX',
           tabBarIcon: ({ focused }) => (
-            <View style={focused ? styles.activeIconContainer : styles.iconContainer}>
-              <Ionicons
-                name={focused ? 'hardware-chip' : 'hardware-chip-outline'}
-                size={22}
-                color={focused ? '#00F0FF' : '#64748B'}
-              />
-            </View>
+            <Ionicons
+              name={focused ? 'hardware-chip' : 'hardware-chip-outline'}
+              size={24}
+              color={focused ? '#00F0FF' : '#64748B'}
+            />
           ),
         }}
       />
@@ -93,13 +88,11 @@ export default function TabsLayout() {
         options={{
           title: 'Telemetría',
           tabBarIcon: ({ focused }) => (
-            <View style={focused ? styles.activeIconContainer : styles.iconContainer}>
-              <Ionicons
-                name={focused ? 'stats-chart' : 'stats-chart-outline'}
-                size={22}
-                color={focused ? '#00F0FF' : '#64748B'}
-              />
-            </View>
+            <Ionicons
+              name={focused ? 'stats-chart' : 'stats-chart-outline'}
+              size={24}
+              color={focused ? '#00F0FF' : '#64748B'}
+            />
           ),
         }}
       />
@@ -108,36 +101,14 @@ export default function TabsLayout() {
         options={{
           title: 'Estado',
           tabBarIcon: ({ focused }) => (
-            <View style={focused ? styles.activeIconContainer : styles.iconContainer}>
-              <Ionicons
-                name={focused ? 'shield' : 'shield-outline'}
-                size={22}
-                color={focused ? '#00F0FF' : '#64748B'}
-              />
-            </View>
+            <Ionicons
+              name={focused ? 'shield' : 'shield-outline'}
+              size={24}
+              color={focused ? '#00F0FF' : '#64748B'}
+            />
           ),
         }}
       />
     </Tabs>
   );
 }
-
-const styles = StyleSheet.create({
-  iconContainer: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  activeIconContainer: {
-    paddingHorizontal: 10,
-    paddingVertical: 2,
-    borderRadius: 12,
-    backgroundColor: 'rgba(0, 240, 255, 0.12)',
-    borderWidth: 1,
-    borderColor: 'rgba(0, 240, 255, 0.45)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
