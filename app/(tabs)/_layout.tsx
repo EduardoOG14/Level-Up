@@ -47,10 +47,10 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Inicio',
+          title: 'Hoy',
           tabBarIcon: ({ focused }) => (
             <Ionicons
-              name={focused ? 'home' : 'home-outline'}
+              name={focused ? 'flash' : 'flash-outline'}
               size={24}
               color={focused ? '#00F0FF' : '#64748B'}
             />
@@ -84,22 +84,9 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="progress"
-        options={{
-          title: 'Telemetría',
-          tabBarIcon: ({ focused }) => (
-            <Ionicons
-              name={focused ? 'stats-chart' : 'stats-chart-outline'}
-              size={24}
-              color={focused ? '#00F0FF' : '#64748B'}
-            />
-          ),
-        }}
-      />
-      <Tabs.Screen
         name="profile"
         options={{
-          title: 'Estado',
+          title: 'Cazador',
           tabBarIcon: ({ focused }) => (
             <Ionicons
               name={focused ? 'shield' : 'shield-outline'}
@@ -107,6 +94,12 @@ export default function TabsLayout() {
               color={focused ? '#00F0FF' : '#64748B'}
             />
           ),
+        }}
+      />
+      <Tabs.Screen
+        name="progress"
+        options={{
+          href: null,
         }}
       />
     </Tabs>

@@ -812,165 +812,7 @@ export default function HomeScreen() {
           </View>
         )}
 
-        {/* 3. DIRECTIVA TÁCTICA CORTEX (INFORMACIÓN COMPLETA Y VISIBLE) */}
-        <View style={styles.cortexCard}>
-          <View style={styles.cortexCardHeader}>
-            <View style={styles.cortexIconCircle}>
-              <Ionicons name="hardware-chip-outline" size={20} color="#00F0FF" />
-            </View>
-            <View style={{ flex: 1 }}>
-              <View style={styles.cortexTitleRow}>
-                <Text style={styles.cortexName}>[ ENLACE NEURAL CORTEX ]</Text>
-                <View style={styles.cortexBadge}>
-                  <Animated.View style={[styles.cortexLiveDot, { transform: [{ scale: liveScale }] }]} />
-                  <Text style={styles.cortexBadgeText}>EN LÍNEA</Text>
-                </View>
-              </View>
-              <Text style={styles.cortexSubtitle}>Directiva Táctica de Inteligencia Artificial</Text>
-            </View>
-            <TouchableOpacity
-              onPress={() => router.push('/(tabs)/tutor')}
-              style={styles.cortexChatBtn}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="chatbubbles-outline" size={15} color="#00F0FF" />
-              <Text style={styles.cortexChatBtnText}>Tutor</Text>
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.cortexQuoteBox}>
-            <Ionicons name="terminal-outline" size={16} color="rgba(0, 240, 255, 0.5)" style={{ marginBottom: 4 }} />
-            <Text style={styles.cortexQuoteText}>
-              {cortexTip}
-            </Text>
-          </View>
-        </View>
-
-        {/* 4. TELEMETRÍA TÁCTICA: HIDRATACIÓN Y BIO-NEXO */}
-        <View style={styles.telemetryGrid}>
-          {/* Card Hidratación */}
-          <TouchableOpacity
-            style={styles.telemetryCard}
-            onPress={() => {
-              if (user?.uid) {
-                SoundEffects.playWaterDrop();
-                drinkCup(user.uid);
-              }
-            }}
-            onLongPress={() => {
-              if (user?.uid && cupsDrank > 0) {
-                Haptics.warning();
-                undoCup(user.uid);
-              }
-            }}
-            activeOpacity={0.8}
-          >
-            <View style={styles.telemetryCardTop}>
-              <View style={styles.telemetryIconContainerWater}>
-                <Ionicons name="water" size={18} color="#00F0FF" />
-              </View>
-              <View style={styles.telemetryTagWater}>
-                <Text style={styles.telemetryTagWaterText}>{waterProgress}%</Text>
-              </View>
-            </View>
-
-            <Text style={styles.telemetryCardLabel}>[ HIDRATACIÓN ]</Text>
-
-            <View style={styles.telemetryMetricRow}>
-              <Text style={styles.telemetryPrimaryValue}>{currentMl.toLocaleString()}</Text>
-              <Text style={styles.telemetrySecondaryValue}> / {targetMl.toLocaleString()} ml</Text>
-            </View>
-
-            <View style={styles.telemetryProgressBarTrack}>
-              <View style={[styles.telemetryProgressBarFillWater, { width: `${waterProgress}%` }]} />
-            </View>
-
-            {/* Chips de Registro Rápido: Vaso 250ml / Botella 500ml */}
-            <View style={styles.hydrationChipsRow}>
-              <TouchableOpacity
-                style={styles.hydrationChipBtn}
-                onPress={() => {
-                  if (user?.uid) {
-                    SoundEffects.playWaterDrop();
-                    drinkCup(user.uid);
-                  }
-                }}
-                activeOpacity={0.7}
-              >
-                <Ionicons name="water-outline" size={12} color="#00F0FF" />
-                <Text style={styles.hydrationChipText}>+250 ml</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.hydrationChipBtn}
-                onPress={() => {
-                  if (user?.uid) {
-                    SoundEffects.playWaterDrop();
-                    drinkCups(user.uid, 2);
-                  }
-                }}
-                activeOpacity={0.7}
-              >
-                <Ionicons name="flask-outline" size={12} color="#00F0FF" />
-                <Text style={styles.hydrationChipText}>+500 ml</Text>
-              </TouchableOpacity>
-            </View>
-          </TouchableOpacity>
-
-          {/* Card Bio-Nexo (Smartwatch) */}
-          <TouchableOpacity
-            style={styles.telemetryCard}
-            onPress={() => setShowSmartwatchModal(true)}
-            activeOpacity={0.8}
-          >
-            <View style={styles.telemetryCardTop}>
-              <View style={styles.telemetryIconContainerWatch}>
-                <Ionicons name="watch-outline" size={18} color="#10B981" />
-              </View>
-              <View style={[styles.watchStatusPill, isWatchConnected && styles.watchStatusPillActive]}>
-                <View style={[styles.watchStatusDot, isWatchConnected && styles.watchStatusDotActive]} />
-                <Text style={[styles.watchStatusText, isWatchConnected && styles.watchStatusTextActive]}>
-                  {isWatchConnected ? 'ONLINE' : 'LINK'}
-                </Text>
-              </View>
-            </View>
-
-            <Text style={styles.telemetryCardLabel}>[ BIO-NEXO SMARTWATCH ]</Text>
-
-            {isWatchConnected ? (
-              <>
-                <View style={styles.telemetryMetricRow}>
-                  <Text style={styles.telemetryPrimaryValue}>{watchSteps.toLocaleString()}</Text>
-                  <Text style={styles.telemetrySecondaryValue}> pasos</Text>
-                </View>
-                <View style={styles.telemetryProgressBarTrack}>
-                  <View style={[styles.telemetryProgressBarFillWatch, { width: `${watchStepProgress}%` }]} />
-                </View>
-                <View style={styles.telemetryActionBtn}>
-                  <Ionicons name="heart" size={14} color="#EF4444" />
-                  <Text style={styles.telemetryActionBtnText}>
-                    {watchMetrics.currentHeartRate} BPM • {watchMetrics.activeCalories} kcal
-                  </Text>
-                </View>
-              </>
-            ) : (
-              <>
-                <View style={styles.telemetryMetricRow}>
-                  <Text style={styles.telemetryPrimaryValue}>Desconectado</Text>
-                </View>
-                <View style={styles.telemetryProgressBarTrack}>
-                  <View style={[styles.telemetryProgressBarFillWatch, { width: '0%' }]} />
-                </View>
-                <View style={styles.telemetryActionBtn}>
-                  <Ionicons name="bluetooth" size={15} color="#10B981" />
-                  <Text style={[styles.telemetryActionBtnText, { color: '#10B981' }]}>Vincular reloj</Text>
-                </View>
-              </>
-            )}
-          </TouchableOpacity>
-        </View>
-
-        {/* DIRECTIVA TÁCTICA DEL DÍA: ACCESO DIRECTO 1-TAP AL ENTRENAMIENTO */}
+        {/* 3. DIRECTIVA HERO DE HOY: 1-TOQUE PARA ACCIÓN (Don't Make Me Think) */}
         <TodayWorkoutCard
           activePlan={currentActivePlan || null}
           activePlanDay={activeDayNumber}
@@ -980,7 +822,7 @@ export default function HomeScreen() {
           onExplorePlans={() => router.push('/(tabs)/workouts')}
         />
 
-        {/* 5. PACTO DE RACHA: ESTADO RIGUROSO (MISIONES + RUTINA) */}
+        {/* 4. PACTO DE RACHA: ESTADO RIGUROSO (MISIONES + RUTINA) */}
         <StreakStatusCard
           streak={user.streak}
           questsCompletedCount={completedCount}
@@ -1021,7 +863,7 @@ export default function HomeScreen() {
           </TouchableOpacity>
         )}
 
-        {/* 6. PROTOCOLO DE MISIONES DIARIAS */}
+        {/* 5. PROTOCOLO DE MISIONES DIARIAS */}
         <Animated.View style={[styles.questsCard, { borderColor: borderPulse }]}>
           <View style={styles.questsHeader}>
             <View style={styles.questsTitleWrapper}>
@@ -1175,6 +1017,164 @@ export default function HomeScreen() {
             </View>
           )}
         </Animated.View>
+
+        {/* 6. TELEMETRÍA TÁCTICA RÁPIDA: HIDRATACIÓN Y BIO-NEXO */}
+        <View style={styles.telemetryGrid}>
+          {/* Card Hidratación */}
+          <TouchableOpacity
+            style={styles.telemetryCard}
+            onPress={() => {
+              if (user?.uid) {
+                SoundEffects.playWaterDrop();
+                drinkCup(user.uid);
+              }
+            }}
+            onLongPress={() => {
+              if (user?.uid && cupsDrank > 0) {
+                Haptics.warning();
+                undoCup(user.uid);
+              }
+            }}
+            activeOpacity={0.8}
+          >
+            <View style={styles.telemetryCardTop}>
+              <View style={styles.telemetryIconContainerWater}>
+                <Ionicons name="water" size={18} color="#00F0FF" />
+              </View>
+              <View style={styles.telemetryTagWater}>
+                <Text style={styles.telemetryTagWaterText}>{waterProgress}%</Text>
+              </View>
+            </View>
+
+            <Text style={styles.telemetryCardLabel}>[ HIDRATACIÓN ]</Text>
+
+            <View style={styles.telemetryMetricRow}>
+              <Text style={styles.telemetryPrimaryValue}>{currentMl.toLocaleString()}</Text>
+              <Text style={styles.telemetrySecondaryValue}> / {targetMl.toLocaleString()} ml</Text>
+            </View>
+
+            <View style={styles.telemetryProgressBarTrack}>
+              <View style={[styles.telemetryProgressBarFillWater, { width: `${waterProgress}%` }]} />
+            </View>
+
+            {/* Chips de Registro Rápido: Vaso 250ml / Botella 500ml */}
+            <View style={styles.hydrationChipsRow}>
+              <TouchableOpacity
+                style={styles.hydrationChipBtn}
+                onPress={() => {
+                  if (user?.uid) {
+                    SoundEffects.playWaterDrop();
+                    drinkCup(user.uid);
+                  }
+                }}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="water-outline" size={12} color="#00F0FF" />
+                <Text style={styles.hydrationChipText}>+250 ml</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.hydrationChipBtn}
+                onPress={() => {
+                  if (user?.uid) {
+                    SoundEffects.playWaterDrop();
+                    drinkCups(user.uid, 2);
+                  }
+                }}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="flask-outline" size={12} color="#00F0FF" />
+                <Text style={styles.hydrationChipText}>+500 ml</Text>
+              </TouchableOpacity>
+            </View>
+          </TouchableOpacity>
+
+          {/* Card Bio-Nexo (Smartwatch) */}
+          <TouchableOpacity
+            style={styles.telemetryCard}
+            onPress={() => setShowSmartwatchModal(true)}
+            activeOpacity={0.8}
+          >
+            <View style={styles.telemetryCardTop}>
+              <View style={styles.telemetryIconContainerWatch}>
+                <Ionicons name="watch-outline" size={18} color="#10B981" />
+              </View>
+              <View style={[styles.watchStatusPill, isWatchConnected && styles.watchStatusPillActive]}>
+                <View style={[styles.watchStatusDot, isWatchConnected && styles.watchStatusDotActive]} />
+                <Text style={[styles.watchStatusText, isWatchConnected && styles.watchStatusTextActive]}>
+                  {isWatchConnected ? 'ONLINE' : 'LINK'}
+                </Text>
+              </View>
+            </View>
+
+            <Text style={styles.telemetryCardLabel}>[ BIO-NEXO SMARTWATCH ]</Text>
+
+            {isWatchConnected ? (
+              <>
+                <View style={styles.telemetryMetricRow}>
+                  <Text style={styles.telemetryPrimaryValue}>{watchSteps.toLocaleString()}</Text>
+                  <Text style={styles.telemetrySecondaryValue}> pasos</Text>
+                </View>
+                <View style={styles.telemetryProgressBarTrack}>
+                  <View style={[styles.telemetryProgressBarFillWatch, { width: `${watchStepProgress}%` }]} />
+                </View>
+                <View style={styles.telemetryActionBtn}>
+                  <Ionicons name="heart" size={14} color="#EF4444" />
+                  <Text style={styles.telemetryActionBtnText}>
+                    {watchMetrics.currentHeartRate} BPM • {watchMetrics.activeCalories} kcal
+                  </Text>
+                </View>
+              </>
+            ) : (
+              <>
+                <View style={styles.telemetryMetricRow}>
+                  <Text style={styles.telemetryPrimaryValue}>Desconectado</Text>
+                </View>
+                <View style={styles.telemetryProgressBarTrack}>
+                  <View style={[styles.telemetryProgressBarFillWatch, { width: '0%' }]} />
+                </View>
+                <View style={styles.telemetryActionBtn}>
+                  <Ionicons name="bluetooth" size={15} color="#10B981" />
+                  <Text style={[styles.telemetryActionBtnText, { color: '#10B981' }]}>Vincular reloj</Text>
+                </View>
+              </>
+            )}
+          </TouchableOpacity>
+        </View>
+
+        {/* 7. DIRECTIVA TÁCTICA CORTEX */}
+        <View style={styles.cortexCard}>
+          <View style={styles.cortexCardHeader}>
+            <View style={styles.cortexIconCircle}>
+              <Ionicons name="hardware-chip-outline" size={20} color="#00F0FF" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <View style={styles.cortexTitleRow}>
+                <Text style={styles.cortexName}>[ ENLACE NEURAL CORTEX ]</Text>
+                <View style={styles.cortexBadge}>
+                  <Animated.View style={[styles.cortexLiveDot, { transform: [{ scale: liveScale }] }]} />
+                  <Text style={styles.cortexBadgeText}>EN LÍNEA</Text>
+                </View>
+              </View>
+              <Text style={styles.cortexSubtitle}>Directiva Táctica de Inteligencia Artificial</Text>
+            </View>
+            <TouchableOpacity
+              onPress={() => router.push('/(tabs)/tutor')}
+              style={styles.cortexChatBtn}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="chatbubbles-outline" size={15} color="#00F0FF" />
+              <Text style={styles.cortexChatBtnText}>Tutor</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.cortexQuoteBox}>
+            <Ionicons name="terminal-outline" size={16} color="rgba(0, 240, 255, 0.5)" style={{ marginBottom: 4 }} />
+            <Text style={styles.cortexQuoteText}>
+              {cortexTip}
+            </Text>
+          </View>
+        </View>
       </ScrollView>
 
       {/* Ventana Táctica de Misión Diaria */}

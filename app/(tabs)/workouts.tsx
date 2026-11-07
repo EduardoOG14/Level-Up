@@ -590,7 +590,7 @@ export default function WorkoutsScreen() {
         </Text>
       </View>
 
-      {/* Switcher Táctico de 2 Pestañas: CORTEX Directivas y Asalto a la Mazmorra */}
+      {/* Switcher Táctico de 2 Pestañas: Programas y Asalto Semanal (Don't Make Me Think) */}
       <View style={styles.topTabs}>
         <TouchableOpacity
           style={[styles.topTabBtn, activeTab === 'plans' && styles.topTabBtnActive]}
@@ -598,12 +598,12 @@ export default function WorkoutsScreen() {
           activeOpacity={0.8}
         >
           <Ionicons
-            name="hardware-chip-outline"
+            name="barbell-outline"
             size={16}
             color={activeTab === 'plans' ? '#0A0A0F' : '#94A3B8'}
           />
           <Text style={[styles.topTabText, activeTab === 'plans' && styles.topTabTextActive]}>
-            [ 🤖 CORTEX Directivas ]
+            [ ⚔️ Programas & Rutinas ]
           </Text>
         </TouchableOpacity>
 
@@ -618,7 +618,7 @@ export default function WorkoutsScreen() {
             color={activeTab === 'custom' ? '#FFFFFF' : '#94A3B8'}
           />
           <Text style={[styles.topTabText, activeTab === 'custom' && styles.topTabTextActiveBoss]}>
-            [ 👑 Asalto / Torre ]
+            [ 👑 Asalto Semanal (Boss) ]
           </Text>
         </TouchableOpacity>
       </View>

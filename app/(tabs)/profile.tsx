@@ -32,8 +32,10 @@ import { usePlanStore } from '../../stores/planStore';
 import { useWorkoutStore } from '../../stores/workoutStore';
 import { Card } from '../../components/ui/Card';
 import { RankBadge } from '../../components/ui/RankBadge';
-import { getRankByXP, getXPForNextLevel } from '../../constants/ranks';
+import { getRankByXP, getXPForNextLevel, RANKS } from '../../constants/ranks';
 import { Colors, Fonts, Spacing, Radius } from '../../constants/theme';
+import { WeeklyWeightModal } from '../../components/progress/WeeklyWeightModal';
+import { MacroCalculatorCard } from '../../components/progress/MacroCalculatorCard';
 import { PlanAlarmModal } from '../../components/plans/PlanAlarmModal';
 import { HunterCardModal } from '../../components/profile/HunterCardModal';
 import { AchievementsModal } from '../../components/achievements/AchievementsModal';
@@ -112,6 +114,25 @@ export default function ProfileScreen() {
   const [editWeight, setEditWeight] = useState(String(user?.weight || 70));
   const [editHeight, setEditHeight] = useState(String(user?.height || 175));
   const [isSavingBio, setIsSavingBio] = useState(false);
+
+  // Selector Táctico del Cazador (Don't Make Me Think)
+  const [hunterViewTab, setHunterViewTab] = useState<'rpg' | 'biometrics'>('rpg');
+  const [showWeightModal, setShowWeightModal] = useState(false);
+  const { weightLogs, loadProgress, isWeeklyCheckinDue } = useProgressStore();
+
+  useEffect(() => {
+    if (user?.uid) {
+      loadProgress(user.uid);
+    }
+  }, [user?.uid, loadProgress]);
+
+  const currentWeight = user?.weight || (weightLogs[0]?.weight ?? 70);
+  const initialWeight = weightLogs[weightLogs.length - 1]?.weight ?? currentWeight;
+  const totalChange = Math.round((currentWeight - initialWeight) * 10) / 10;
+  const latestChange = weightLogs.length >= 2
+    ? Math.round((weightLogs[0].weight - weightLogs[1].weight) * 10) / 10
+    : 0;
+  const checkinDue = isWeeklyCheckinDue ? isWeeklyCheckinDue() : false;
 
   const userBmi = getUserBMI(user?.weight, user?.height);
   const bmiData = getBMICategory(userBmi);
@@ -451,82 +472,123 @@ export default function ProfileScreen() {
           </View>
         </View>
 
-        {/* 2. CONSOLA DE ACCESO TÁCTICO DEL CAZADOR (Credenciales y Salones) */}
-        <View style={styles.tacticalDeckContainer}>
-          {/* Botón Principal: Ficha & Credencial Oficial de Cazador */}
+        {/* Switcher Táctico del Cazador (Don't Make Me Think) */}
+        <View style={styles.cazadorSegmentContainer}>
           <TouchableOpacity
-            style={styles.hunterCardHeroBtn}
-            onPress={() => setShowHunterCardModal(true)}
+            style={[styles.cazadorSegmentBtn, hunterViewTab === 'rpg' && styles.cazadorSegmentBtnActive]}
+            onPress={() => {
+              Haptics.light();
+              setHunterViewTab('rpg');
+            }}
             activeOpacity={0.8}
           >
-            <View style={styles.hunterCardIconCircle}>
-              <Ionicons name="card" size={20} color="#00F0FF" />
-            </View>
-            <View style={{ flex: 1 }}>
-              <View style={styles.hunterCardTagRow}>
-                <Text style={styles.hunterCardTitle}>FICHA DE CAZADOR</Text>
-                <View style={styles.hunterCardRankTag}>
-                  <Text style={styles.hunterCardRankTagText}>RANGO {rank.key}</Text>
-                </View>
-              </View>
-              <Text style={styles.hunterCardSubtitle}>Licencia oficial, telemetría biométrica y QR ›</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={18} color="#00F0FF" />
+            <Ionicons
+              name="shield-outline"
+              size={15}
+              color={hunterViewTab === 'rpg' ? '#0A0A0F' : '#00F0FF'}
+            />
+            <Text style={[styles.cazadorSegmentBtnText, hunterViewTab === 'rpg' && styles.cazadorSegmentBtnTextActive]}>
+              [ ⚔️ Atributos & Rango ]
+            </Text>
           </TouchableOpacity>
 
-          {/* Fila de Módulos: Salón de Logros & Ejército de Sombras */}
-          <View style={styles.tacticalSplitRow}>
-            {/* Salón de Logros */}
-            <TouchableOpacity
-              style={[styles.tacticalTile, isAllCompleted() && styles.tacticalTileGold]}
-              onPress={() => setShowAchievementsModal(true)}
-              activeOpacity={0.8}
-            >
-              <View
-                style={[
-                  styles.tacticalTileIconBox,
-                  { backgroundColor: isAllCompleted() ? 'rgba(245, 158, 11, 0.15)' : 'rgba(0, 240, 255, 0.1)' },
-                ]}
-              >
-                <Ionicons
-                  name={isAllCompleted() ? 'trophy' : 'trophy-outline'}
-                  size={18}
-                  color={isAllCompleted() ? '#F59E0B' : '#00F0FF'}
-                />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text
-                  style={[styles.tacticalTileTitle, isAllCompleted() && { color: '#F59E0B' }]}
-                  numberOfLines={1}
-                >
-                  Salón de Logros
-                </Text>
-                <Text style={styles.tacticalTileValue}>
-                  {unlockedIds.length} / 52 <Text style={styles.tacticalTileSub}>desbloqueados</Text>
-                </Text>
-              </View>
-            </TouchableOpacity>
-
-            {/* Ejército de Sombras */}
-            <TouchableOpacity
-              style={[styles.tacticalTile, styles.tacticalTilePurple]}
-              onPress={() => setShowShadowArmyModal(true)}
-              activeOpacity={0.8}
-            >
-              <View style={[styles.tacticalTileIconBox, { backgroundColor: 'rgba(168, 85, 247, 0.15)' }]}>
-                <Ionicons name="skull" size={18} color="#C084FC" />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.tacticalTileTitle, { color: '#C084FC' }]} numberOfLines={1}>
-                  Ejército Sombrío
-                </Text>
-                <Text style={styles.tacticalTileValue}>
-                  {soldiers.length} <Text style={styles.tacticalTileSub}>sombras</Text>
-                </Text>
-              </View>
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity
+            style={[styles.cazadorSegmentBtn, hunterViewTab === 'biometrics' && styles.cazadorSegmentBtnActive]}
+            onPress={() => {
+              Haptics.light();
+              setHunterViewTab('biometrics');
+            }}
+            activeOpacity={0.8}
+          >
+            <Ionicons
+              name="scale-outline"
+              size={15}
+              color={hunterViewTab === 'biometrics' ? '#0A0A0F' : '#00F0FF'}
+            />
+            <Text style={[styles.cazadorSegmentBtnText, hunterViewTab === 'biometrics' && styles.cazadorSegmentBtnTextActive]}>
+              [ ⚖️ Biometría & Peso ]
+            </Text>
+          </TouchableOpacity>
         </View>
+
+        {hunterViewTab === 'rpg' ? (
+          <>
+            {/* 2. CONSOLA DE ACCESO TÁCTICO DEL CAZADOR (Credenciales y Salones) */}
+            <View style={styles.tacticalDeckContainer}>
+              {/* Botón Principal: Ficha & Credencial Oficial de Cazador */}
+              <TouchableOpacity
+                style={styles.hunterCardHeroBtn}
+                onPress={() => setShowHunterCardModal(true)}
+                activeOpacity={0.8}
+              >
+                <View style={styles.hunterCardIconCircle}>
+                  <Ionicons name="card" size={20} color="#00F0FF" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <View style={styles.hunterCardTagRow}>
+                    <Text style={styles.hunterCardTitle}>FICHA DE CAZADOR</Text>
+                    <View style={styles.hunterCardRankTag}>
+                      <Text style={styles.hunterCardRankTagText}>RANGO {rank.key}</Text>
+                    </View>
+                  </View>
+                  <Text style={styles.hunterCardSubtitle}>Licencia oficial, telemetría biométrica y QR ›</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color="#00F0FF" />
+              </TouchableOpacity>
+
+              {/* Fila de Módulos: Salón de Logros & Ejército de Sombras */}
+              <View style={styles.tacticalSplitRow}>
+                {/* Salón de Logros */}
+                <TouchableOpacity
+                  style={[styles.tacticalTile, isAllCompleted() && styles.tacticalTileGold]}
+                  onPress={() => setShowAchievementsModal(true)}
+                  activeOpacity={0.8}
+                >
+                  <View
+                    style={[
+                      styles.tacticalTileIconBox,
+                      { backgroundColor: isAllCompleted() ? 'rgba(245, 158, 11, 0.15)' : 'rgba(0, 240, 255, 0.1)' },
+                    ]}
+                  >
+                    <Ionicons
+                      name={isAllCompleted() ? 'trophy' : 'trophy-outline'}
+                      size={18}
+                      color={isAllCompleted() ? '#F59E0B' : '#00F0FF'}
+                    />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text
+                      style={[styles.tacticalTileTitle, isAllCompleted() && { color: '#F59E0B' }]}
+                      numberOfLines={1}
+                    >
+                      Salón de Logros
+                    </Text>
+                    <Text style={styles.tacticalTileValue}>
+                      {unlockedIds.length} / 52 <Text style={styles.tacticalTileSub}>desbloqueados</Text>
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+
+                {/* Ejército de Sombras */}
+                <TouchableOpacity
+                  style={[styles.tacticalTile, styles.tacticalTilePurple]}
+                  onPress={() => setShowShadowArmyModal(true)}
+                  activeOpacity={0.8}
+                >
+                  <View style={[styles.tacticalTileIconBox, { backgroundColor: 'rgba(168, 85, 247, 0.15)' }]}>
+                    <Ionicons name="skull" size={18} color="#C084FC" />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.tacticalTileTitle, { color: '#C084FC' }]} numberOfLines={1}>
+                      Ejército Sombrío
+                    </Text>
+                    <Text style={styles.tacticalTileValue}>
+                      {soldiers.length} <Text style={styles.tacticalTileSub}>sombras</Text>
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              </View>
+            </View>
 
         {/* 3. TARJETA DESTACADA: LA TORRE DE LOS 22 MONARCAS */}
         <TouchableOpacity
@@ -1127,11 +1189,219 @@ export default function ProfileScreen() {
             <Ionicons name="chevron-forward" size={18} color="#EF4444" />
           </TouchableOpacity>
         </View>
+          </>
+        ) : (
+          <>
+            {/* ================= 1. CALIBRACIÓN BIOMÉTRICA SEMANAL ================= */}
+            <View style={styles.cyberCard}>
+              <View style={styles.cyberCardHeader}>
+                <View style={styles.cyberCardTitleRow}>
+                  <View style={[styles.questsTitleIconBox, { backgroundColor: 'rgba(0, 240, 255, 0.15)' }]}>
+                    <Ionicons name="scale-outline" size={17} color="#00F0FF" />
+                  </View>
+                  <Text style={styles.cyberCardTitle}>[ CALIBRACIÓN BIOMÉTRICA SEMANAL ]</Text>
+                </View>
+                <TouchableOpacity
+                  style={styles.calibrateActionBtn}
+                  onPress={() => {
+                    Haptics.light();
+                    setShowWeightModal(true);
+                  }}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="scale" size={13} color="#0A0A0F" />
+                  <Text style={styles.calibrateActionBtnText}>Calibrar</Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Banner de Aviso si el pesaje semanal está pendiente (Alerta Red Gate) */}
+              {checkinDue && (
+                <TouchableOpacity
+                  style={styles.pendingWeightBanner}
+                  onPress={() => {
+                    Haptics.medium();
+                    setShowWeightModal(true);
+                  }}
+                  activeOpacity={0.85}
+                >
+                  <View style={styles.pendingBannerIcon}>
+                    <Ionicons name="warning" size={18} color="#F59E0B" />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.pendingBannerTitle}>[ ALERTA: CALIBRACIÓN SEMANAL PENDIENTE ]</Text>
+                    <Text style={styles.pendingBannerSub}>
+                      Ha transcurrido 1 semana. Registra tu peso actual para ganar +50 XP y reajustar tu plan.
+                    </Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={18} color="#F59E0B" />
+                </TouchableOpacity>
+              )}
+
+              {/* Métricas Principales de Peso en formato Telemetría HUD */}
+              <View style={styles.weightMetricsRow}>
+                <View style={styles.weightMetricItem}>
+                  <Text style={styles.weightMetricLabel}>PESO ACTUAL</Text>
+                  <Text style={styles.weightMetricValue}>{currentWeight.toFixed(1)} <Text style={styles.weightMetricUnit}>kg</Text></Text>
+                </View>
+
+                <View style={styles.weightMetricDivider} />
+
+                <View style={styles.weightMetricItem}>
+                  <Text style={styles.weightMetricLabel}>ESTA SEMANA</Text>
+                  <Text
+                    style={[
+                      styles.weightMetricValue,
+                      latestChange < 0 ? styles.changeGreen : latestChange > 0 ? styles.changeOrange : null,
+                    ]}
+                  >
+                    {latestChange > 0 ? `+${latestChange}` : `${latestChange}`} <Text style={styles.weightMetricUnit}>kg</Text>
+                  </Text>
+                </View>
+
+                <View style={styles.weightMetricDivider} />
+
+                <View style={styles.weightMetricItem}>
+                  <Text style={styles.weightMetricLabel}>TOTAL</Text>
+                  <Text
+                    style={[
+                      styles.weightMetricValue,
+                      totalChange < 0 ? styles.changeGreen : totalChange > 0 ? styles.changeOrange : null,
+                    ]}
+                  >
+                    {totalChange > 0 ? `+${totalChange}` : `${totalChange}`} <Text style={styles.weightMetricUnit}>kg</Text>
+                  </Text>
+                </View>
+              </View>
+
+              {/* Historial Cronológico de Pesajes */}
+              {weightLogs.length > 0 && (
+                <View style={styles.weightHistoryBox}>
+                  <Text style={styles.historySectionLabel}>[ REGISTRO CRONOLÓGICO DE PESAJES ]</Text>
+                  {weightLogs.slice(0, 5).map((log, index) => (
+                    <View key={log.id || index} style={styles.historyRow}>
+                      <View style={styles.historyDateBox}>
+                        <Ionicons name="calendar-outline" size={13} color="#64748B" />
+                        <Text style={styles.historyDateText}>
+                          {log.dateLabel || new Date(log.date).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })}
+                        </Text>
+                      </View>
+
+                      <Text style={styles.historyWeightVal}>{log.weight.toFixed(1)} kg</Text>
+
+                      <View
+                        style={[
+                          styles.historyPill,
+                          log.change && log.change < 0
+                            ? styles.historyPillDown
+                            : log.change && log.change > 0
+                            ? styles.historyPillUp
+                            : null,
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.historyPillText,
+                            log.change && log.change < 0
+                              ? styles.historyPillTextDown
+                              : log.change && log.change > 0
+                              ? styles.historyPillTextUp
+                              : null,
+                          ]}
+                        >
+                          {log.change && log.change > 0 ? `+${log.change}` : `${log.change ?? 0}`} kg
+                        </Text>
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              )}
+
+              {/* Transmisión Táctica de CORTEX */}
+              <View style={styles.cortexMotivationalCard}>
+                <View style={styles.cortexMotivationalIconBox}>
+                  <Ionicons name="hardware-chip-outline" size={16} color="#00F0FF" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.cortexMotivationalTag}>[ TRANSMISIÓN CORTEX ]</Text>
+                  <Text style={styles.cortexMotivationalText}>
+                    {latestChange < 0
+                      ? 'Tu índice de masa se está depurando. La constancia semanal acelerará tu ascenso a los rangos de élite.'
+                      : latestChange > 0
+                      ? 'Incremento de masa corporal. Asegúrate de consumir suficiente proteína para alimentar tus fibras musculares.'
+                      : 'Composición corporal estable. Mantén el ritmo de los circuitos de entrenamiento para forjar resistencia.'}
+                  </Text>
+                </View>
+              </View>
+            </View>
+
+            {/* ================= 2. CALCULADORA TÁCTICA DE MACROS Y CALORÍAS ================= */}
+            <MacroCalculatorCard
+              weight={currentWeight}
+              height={user.height || 175}
+              age={user.age || 25}
+              userGoal={user.goals?.[0]}
+            />
+
+            {/* ================= 3. ESCALA DE RANGOS DEL SISTEMA ================= */}
+            <View style={styles.cyberCard}>
+              <View style={styles.cyberCardHeader}>
+                <View style={styles.cyberCardTitleRow}>
+                  <View style={[styles.questsTitleIconBox, { backgroundColor: 'rgba(139, 92, 246, 0.15)' }]}>
+                    <Ionicons name="layers-outline" size={17} color="#8B5CF6" />
+                  </View>
+                  <Text style={styles.cyberCardTitle}>[ ESCALA DE RANGOS DEL SISTEMA ]</Text>
+                </View>
+              </View>
+
+              <View style={styles.rankList}>
+                {RANKS.map((r) => {
+                  const isCurrentRank = r.key === rank.key;
+                  const isPastRank = user.totalXP >= r.minXP && r.key !== rank.key;
+                  return (
+                    <View
+                      key={r.key}
+                      style={[
+                        styles.rankItem,
+                        isCurrentRank && [styles.rankItemActive, { borderColor: r.color, backgroundColor: r.color + '12' }],
+                      ]}
+                    >
+                      <Text style={styles.rankItemEmoji}>{r.emoji}</Text>
+                      <View style={styles.rankItemInfo}>
+                        <Text style={[styles.rankItemName, { color: r.color }]}>
+                          {r.name} ({r.label})
+                        </Text>
+                        <Text style={styles.rankItemLabel}>
+                          Nivel {r.minLevel}-{r.maxLevel} • {r.minXP.toLocaleString()} XP
+                        </Text>
+                      </View>
+                      {isPastRank && (
+                        <View style={styles.conqueredPill}>
+                          <Text style={styles.conqueredText}>✓ Conquistado</Text>
+                        </View>
+                      )}
+                      {isCurrentRank && (
+                        <View style={[styles.currentRankPill, { borderColor: r.color, backgroundColor: r.color + '25' }]}>
+                          <Text style={[styles.currentRankText, { color: r.color }]}>RANGO ACTUAL</Text>
+                        </View>
+                      )}
+                    </View>
+                  );
+                })}
+              </View>
+            </View>
+          </>
+        )}
 
         <Text style={styles.version}>Level Up System v{currentAppVersion} • Impulsado por CORTEX AI</Text>
       </ScrollView>
 
       <PlanAlarmModal visible={showAlarmModal} onClose={() => setShowAlarmModal(false)} />
+
+      {/* Modal de Calibración de Peso Semanal */}
+      <WeeklyWeightModal
+        visible={showWeightModal}
+        onClose={() => setShowWeightModal(false)}
+      />
 
       {/* Modal de Calibración de Equipamiento */}
       <Modal
@@ -1521,6 +1791,239 @@ const styles = StyleSheet.create({
     gap: 6,
     overflow: 'hidden',
   },
+
+  // Segmented Controller Cazador (Don't Make Me Think)
+  cazadorSegmentContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#0F121E',
+    borderRadius: Radius.lg,
+    padding: 4,
+    borderWidth: 1.5,
+    borderColor: 'rgba(0, 240, 255, 0.25)',
+    gap: 6,
+    marginVertical: 4,
+  },
+  cazadorSegmentBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    borderRadius: Radius.md,
+  },
+  cazadorSegmentBtnActive: {
+    backgroundColor: '#00F0FF',
+    shadowColor: '#00F0FF',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.5,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  cazadorSegmentBtnText: {
+    color: '#94A3B8',
+    fontSize: 11.5,
+    fontWeight: 'bold',
+    letterSpacing: 0.3,
+  },
+  cazadorSegmentBtnTextActive: {
+    color: '#0A0A0F',
+    fontWeight: '900',
+  },
+
+  // Biometrics HUD in Profile
+  calibrateActionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#00F0FF',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: Radius.full,
+  },
+  calibrateActionBtnText: {
+    color: '#0A0A0F',
+    fontSize: 11,
+    fontWeight: 'bold',
+  },
+  pendingWeightBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: 'rgba(245, 158, 11, 0.12)',
+    borderRadius: 14,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(245, 158, 11, 0.5)',
+  },
+  pendingBannerIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(245, 158, 11, 0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pendingBannerTitle: {
+    color: '#F59E0B',
+    fontSize: 11,
+    fontWeight: 'bold',
+    letterSpacing: 0.5,
+  },
+  pendingBannerSub: {
+    color: '#CBD5E1',
+    fontSize: 10.5,
+    marginTop: 2,
+    lineHeight: 14,
+  },
+  weightMetricsRow: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(255, 255, 255, 0.025)',
+    borderRadius: 14,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.06)',
+  },
+  weightMetricItem: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 2,
+  },
+  weightMetricLabel: {
+    color: '#64748B',
+    fontSize: 9.5,
+    fontWeight: 'bold',
+    letterSpacing: 0.5,
+  },
+  weightMetricValue: {
+    color: '#F8FAFC',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  weightMetricUnit: {
+    color: '#64748B',
+    fontSize: 11,
+    fontWeight: 'normal',
+  },
+  changeGreen: { color: '#10B981' },
+  changeOrange: { color: '#F59E0B' },
+  weightMetricDivider: {
+    width: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+  },
+  weightHistoryBox: {
+    gap: 6,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.06)',
+    paddingTop: 10,
+  },
+  historySectionLabel: {
+    color: '#64748B',
+    fontSize: 10,
+    fontWeight: 'bold',
+    letterSpacing: 0.8,
+  },
+  historyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: 'rgba(255, 255, 255, 0.025)',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.05)',
+  },
+  historyDateBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  historyDateText: {
+    color: '#94A3B8',
+    fontSize: 11,
+  },
+  historyWeightVal: {
+    color: '#F8FAFC',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  historyPill: {
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: Radius.sm,
+  },
+  historyPillDown: { backgroundColor: 'rgba(16, 185, 129, 0.15)' },
+  historyPillUp: { backgroundColor: 'rgba(245, 158, 11, 0.15)' },
+  historyPillText: {
+    color: '#64748B',
+    fontSize: 10,
+    fontWeight: 'bold',
+  },
+  historyPillTextDown: { color: '#10B981' },
+  historyPillTextUp: { color: '#F59E0B' },
+  cortexMotivationalCard: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+    backgroundColor: 'rgba(0, 240, 255, 0.06)',
+    borderRadius: 14,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 240, 255, 0.25)',
+  },
+  cortexMotivationalIconBox: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: 'rgba(0, 240, 255, 0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 1,
+  },
+  cortexMotivationalTag: {
+    color: '#00F0FF',
+    fontSize: 10,
+    fontWeight: 'bold',
+    letterSpacing: 0.8,
+  },
+  cortexMotivationalText: {
+    color: '#94A3B8',
+    fontSize: 11,
+    lineHeight: 16,
+    marginTop: 2,
+  },
+  rankList: { gap: 6 },
+  rankItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.025)',
+    padding: 10,
+    borderRadius: Radius.md,
+    gap: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.05)',
+  },
+  rankItemActive: { borderWidth: 1.5 },
+  rankItemEmoji: { fontSize: 20 },
+  rankItemInfo: { flex: 1 },
+  rankItemName: { fontSize: 13, fontWeight: 'bold' },
+  rankItemLabel: { color: '#64748B', fontSize: 10, marginTop: 1 },
+  conqueredPill: {
+    backgroundColor: 'rgba(16, 185, 129, 0.15)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: Radius.full,
+  },
+  conqueredText: { color: '#10B981', fontSize: 9.5, fontWeight: 'bold' },
+  currentRankPill: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: Radius.full,
+    borderWidth: 1,
+  },
+  currentRankText: { fontSize: 9.5, fontWeight: 'bold' },
   avatarAuraRing: {
     padding: 5,
     borderRadius: 60,
